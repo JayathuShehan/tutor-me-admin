@@ -10,37 +10,46 @@
 
 import readline from "readline";
 
-const API_BASE = "https://tutorme-backend-api-d7a6cjdkgnedbxf0.southeastasia-01.azurewebsites.net";
+const API_BASE =
+  "https://tutorme-backend-api-d7a6cjdkgnedbxf0.southeastasia-01.azurewebsites.net";
 
 const OL_RATES = {
   universityStudentsRate: { minimumRate: 1000, maximumRate: 2500 },
-  partTimeTutorRate:      { minimumRate: 1500, maximumRate: 3500 },
-  fullTimeTutorRate:      { minimumRate: 2000, maximumRate: 5000 },
-  moeTeacherRate:         { minimumRate: 2500, maximumRate: 6000 },
+  partTimeTutorRate: { minimumRate: 1500, maximumRate: 3500 },
+  fullTimeTutorRate: { minimumRate: 2000, maximumRate: 5000 },
+  moeTeacherRate: { minimumRate: 2500, maximumRate: 6000 },
 };
 
 const AL_RATES = {
   universityStudentsRate: { minimumRate: 1500, maximumRate: 3000 },
-  partTimeTutorRate:      { minimumRate: 2000, maximumRate: 4000 },
-  fullTimeTutorRate:      { minimumRate: 2000, maximumRate: 6000 },
-  moeTeacherRate:         { minimumRate: 2500, maximumRate: 8000 },
+  partTimeTutorRate: { minimumRate: 2000, maximumRate: 4000 },
+  fullTimeTutorRate: { minimumRate: 2000, maximumRate: 6000 },
+  moeTeacherRate: { minimumRate: 2500, maximumRate: 8000 },
 };
 
 const TARGET_GRADES = [
-  { titleMatch: "Cambridge Ordinary Level",  rates: OL_RATES },
-  { titleMatch: "Edexcel Ordinary Level",    rates: OL_RATES },
-  { titleMatch: "Cambridge Advanced Level",  rates: AL_RATES },
-  { titleMatch: "Edexcel Advanced Level",    rates: AL_RATES },
+  { titleMatch: "Cambridge Ordinary Level", rates: OL_RATES },
+  { titleMatch: "Edexcel Ordinary Level", rates: OL_RATES },
+  { titleMatch: "Cambridge Advanced Level", rates: AL_RATES },
+  { titleMatch: "Edexcel Advanced Level", rates: AL_RATES },
 ];
 
 function prompt(question) {
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  return new Promise((resolve) => rl.question(question, (ans) => { rl.close(); resolve(ans); }));
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  return new Promise((resolve) =>
+    rl.question(question, (ans) => {
+      rl.close();
+      resolve(ans);
+    }),
+  );
 }
 
 async function login(email, password, retries = 5) {
   for (let i = 0; i < retries; i++) {
-    const res  = await fetch(`${API_BASE}/v1/auth/login`, {
+    const res = await fetch(`${API_BASE}/v1/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -60,7 +69,7 @@ async function login(email, password, retries = 5) {
 }
 
 async function fetchAllGrades(token) {
-  const res  = await fetch(`${API_BASE}/v1/grades?page=1&limit=100`, {
+  const res = await fetch(`${API_BASE}/v1/grades?page=1&limit=100`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   const data = await res.json();
@@ -68,26 +77,29 @@ async function fetchAllGrades(token) {
 }
 
 async function fetchGradeById(token, id) {
-  const res  = await fetch(`${API_BASE}/v1/grades/${id}`, {
+  const res = await fetch(`${API_BASE}/v1/grades/${id}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return res.json();
 }
 
 async function fetchExistingRates(token) {
-  const res  = await fetch(`${API_BASE}/v1/tuitionRates?page=1&limit=500`, {
+  const res = await fetch(`${API_BASE}/v1/tuitionRates?page=1&limit=500`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   const data = await res.json();
   return new Set(
-    (data.results ?? []).map((r) => `${r.grade?.id}|${r.subject?.id}`)
+    (data.results ?? []).map((r) => `${r.grade?.id}|${r.subject?.id}`),
   );
 }
 
 async function createRate(token, payload) {
-  const res  = await fetch(`${API_BASE}/v1/tuitionRates`, {
+  const res = await fetch(`${API_BASE}/v1/tuitionRates`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
     body: JSON.stringify(payload),
   });
   const data = await res.json();
@@ -98,7 +110,7 @@ async function createRate(token, payload) {
 async function main() {
   console.log("=== Add Tuition Rates: Cambridge & Edexcel ===\n");
 
-  const email    = process.argv[2] ?? (await prompt("Admin email: "));
+  const email = process.argv[2] ?? (await prompt("Admin email: "));
   const password = process.argv[3] ?? (await prompt("Admin password: "));
 
   console.log("\nLogging in...");
@@ -114,12 +126,13 @@ async function main() {
   console.log(`✓ ${existing.size} existing rate entries\n`);
 
   let successCount = 0;
-  let skipCount    = 0;
-  let errorCount   = 0;
+  let skipCount = 0;
+  let errorCount = 0;
 
   for (const target of TARGET_GRADES) {
-    const grade = grades.find((g) =>
-      g.title.toLowerCase().trim() === target.titleMatch.toLowerCase().trim()
+    const grade = grades.find(
+      (g) =>
+        g.title.toLowerCase().trim() === target.titleMatch.toLowerCase().trim(),
     );
 
     if (!grade) {
@@ -130,7 +143,7 @@ async function main() {
     console.log(`\n📚 ${grade.title} (${grade.id})`);
 
     const gradeDetails = await fetchGradeById(token, grade.id);
-    const subjects     = gradeDetails.subjects ?? [];
+    const subjects = gradeDetails.subjects ?? [];
 
     if (subjects.length === 0) {
       console.log("  ⚠ No subjects found for this grade.");
@@ -148,7 +161,7 @@ async function main() {
       process.stdout.write(`  Creating rate for: ${subject.title} ... `);
       try {
         await createRate(token, {
-          grade:   grade.id,
+          grade: grade.id,
           subject: subject.id,
           ...target.rates,
         });

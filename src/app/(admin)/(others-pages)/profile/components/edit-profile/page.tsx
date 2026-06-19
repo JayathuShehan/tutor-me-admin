@@ -14,7 +14,7 @@ import {
   useUpdateUserMutation,
 } from "@/store/api/splits/users";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Pencil } from "lucide-react";
+import { Pencil, RotateCcw, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
@@ -75,10 +75,10 @@ export default function UpdateUser() {
   const genderValue = watch("gender") || "not specified";
   const avatarUrl = watch("avatar");
 
-  const [imageSrc, setImageSrc] = useState<string>(
-    user?.avatar || "/images/user/user.png",
-  );
   const [hasImageError, setHasImageError] = useState(false);
+  const [dropzoneKey, setDropzoneKey] = useState(0);
+
+  const resetDropzone = () => setDropzoneKey((k) => k + 1);
 
   useEffect(() => {
     if (user && isModalOpen) {
@@ -109,17 +109,9 @@ export default function UpdateUser() {
         gender: (user.gender as "male" | "female" | "other") ?? "other",
       });
 
-      setImageSrc(user.avatar || "/images/user/user.png");
       setHasImageError(false);
     }
   }, [user, isModalOpen, reset]);
-
-  useEffect(() => {
-    if (!isModalOpen) return;
-
-    setImageSrc(avatarUrl || user?.avatar || "/images/user/user.png");
-    setHasImageError(false);
-  }, [avatarUrl, isModalOpen, user?.avatar]);
 
   const [initialValues, setInitialValues] = useState<UpdateUserSchema | null>(
     null,
@@ -149,7 +141,6 @@ export default function UpdateUser() {
       reset(defaultValues);
       setInitialValues(defaultValues);
 
-      setImageSrc(user.avatar || "/images/user/user.png");
       setHasImageError(false);
     }
   }, [user, isModalOpen, reset]);
@@ -213,7 +204,9 @@ export default function UpdateUser() {
         >
           <div className="flex items-center justify-between mb-4 px-2">
             <h2 className="text-xl font-semibold">Edit Profile</h2>
-            <p className="text-sm text-gray-600 italic">* Required</p>
+            <p className="text-sm text-gray-600 italic">
+              <span className="text-red-500">*</span> Required
+            </p>
           </div>
 
           <div className="max-h-[75vh] overflow-y-auto scrollbar-thin space-y-4 px-4 ">
@@ -222,7 +215,9 @@ export default function UpdateUser() {
             </Label>
 
             <div className="grid gap-3">
-              <Label htmlFor="name">Name *</Label>
+              <Label htmlFor="name">
+                Name <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="name"
                 {...register("name", {
@@ -237,7 +232,9 @@ export default function UpdateUser() {
             </div>
 
             <div className="grid gap-3">
-              <Label htmlFor="email">Email *</Label>
+              <Label htmlFor="email">
+                Email <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="email"
                 type="email"
@@ -249,16 +246,17 @@ export default function UpdateUser() {
             </div>
 
             <div className="grid gap-3">
-              <Label className="font-semibold">Profile Image *</Label>
+              <Label className="font-semibold">
+                Profile Image <span className="text-red-500">*</span>
+              </Label>
 
               <FileUploadDropzone
+                key={dropzoneKey}
                 imageOnly
                 onUploaded={(url) => {
-                  const restoredAvatar = user.avatar || "";
-                  const nextAvatar = url || restoredAvatar;
-
-                  setValue("avatar", nextAvatar, { shouldValidate: true });
-                  setImageSrc(nextAvatar || "/images/user/user.png");
+                  setValue("avatar", url || user.avatar || "", {
+                    shouldValidate: true,
+                  });
                   setHasImageError(false);
                 }}
               />
@@ -268,19 +266,58 @@ export default function UpdateUser() {
               )}
 
               <div className="mt-3 flex flex-col items-center justify-center gap-3 text-center">
-                <img
-                  src={imageSrc}
-                  alt="avatar preview"
-                  className="w-28 h-28 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600"
-                  onError={() => {
-                    setImageSrc("/images/user/user.png");
-                    setHasImageError(true);
-                  }}
-                />
+                <div className="relative inline-block">
+                  {avatarUrl && !hasImageError ? (
+                    <img
+                      src={avatarUrl}
+                      alt="avatar preview"
+                      className="w-28 h-28 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600"
+                      onError={() => setHasImageError(true)}
+                    />
+                  ) : (
+                    <div className="w-28 h-28 rounded-full bg-blue-600 flex items-center justify-center border-2 border-blue-500">
+                      <span className="text-4xl font-bold text-white select-none">
+                        {(user.name?.[0] || "A").toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+
+                  {avatarUrl && (
+                    <button
+                      type="button"
+                      title="Remove photo"
+                      onClick={() => {
+                        setValue("avatar", "", { shouldValidate: true });
+                        setHasImageError(false);
+                        resetDropzone();
+                      }}
+                      className="absolute bottom-0 left-0 w-8 h-8 rounded-full bg-white border border-gray-200 shadow flex items-center justify-center text-red-500 hover:bg-red-50 dark:bg-gray-800 dark:border-gray-600 dark:hover:bg-red-950/40 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+
+                  {avatarUrl && avatarUrl !== (user.avatar || "") && (
+                    <button
+                      type="button"
+                      title="Revert to saved"
+                      onClick={() => {
+                        setValue("avatar", user.avatar || "", {
+                          shouldValidate: true,
+                        });
+                        setHasImageError(false);
+                        resetDropzone();
+                      }}
+                      className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-white border border-gray-200 shadow flex items-center justify-center text-gray-500 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:hover:bg-white/10 transition-colors"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
 
                 {hasImageError && (
                   <p className="text-sm text-red-500">
-                    Failed to load image. Showing default avatar.
+                    Failed to load image. Please upload a new one.
                   </p>
                 )}
               </div>
@@ -289,7 +326,7 @@ export default function UpdateUser() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col">
                 <Label htmlFor="gender" className="mb-3">
-                  Gender *
+                  Gender <span className="text-red-500">*</span>
                 </Label>
                 <Select
                   options={[
@@ -314,7 +351,7 @@ export default function UpdateUser() {
 
               <div className="flex flex-col">
                 <Label htmlFor="phoneNumber" className="mb-3">
-                  Contact Number *
+                  Contact Number <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="phoneNumber"
@@ -336,7 +373,7 @@ export default function UpdateUser() {
               </div>
               <div className="flex flex-col">
                 <Label htmlFor="birthday" className="mb-3">
-                  Date of Birth *
+                  Date of Birth <span className="text-red-500">*</span>
                 </Label>
                 <DatePicker
                   value={watch("birthday")}
@@ -365,7 +402,9 @@ export default function UpdateUser() {
             </Label>
 
             <div className="grid gap-3">
-              <Label htmlFor="address">Address *</Label>
+              <Label htmlFor="address">
+                Address <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="address"
                 {...register("address", {
@@ -388,7 +427,7 @@ export default function UpdateUser() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col">
                 <Label htmlFor="city" className="mb-3">
-                  City *
+                  City <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="city"
@@ -409,7 +448,7 @@ export default function UpdateUser() {
 
               <div className="flex flex-col">
                 <Label htmlFor="country" className="mb-3">
-                  Country *
+                  Country <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="country"
@@ -430,7 +469,7 @@ export default function UpdateUser() {
 
               <div className="flex flex-col">
                 <Label htmlFor="zip" className="mb-3">
-                  Zip / Postal Code *
+                  Zip / Postal Code <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="zip"
@@ -451,7 +490,7 @@ export default function UpdateUser() {
 
               <div className="flex flex-col">
                 <Label htmlFor="state" className="mb-3">
-                  State *
+                  State <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="state"
@@ -472,7 +511,7 @@ export default function UpdateUser() {
 
               <div className="flex flex-col md:col-span-2">
                 <Label htmlFor="region" className="mb-3">
-                  Region *
+                  Region <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="region"

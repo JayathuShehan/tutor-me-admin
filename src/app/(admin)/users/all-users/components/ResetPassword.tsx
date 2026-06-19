@@ -18,13 +18,18 @@ import toast from "react-hot-toast";
 
 interface ResetPasswordProps {
   userId: string;
+  disabled?: boolean;
 }
 
-export function ResetPassword({ userId }: ResetPasswordProps) {
+export function ResetPassword({
+  userId,
+  disabled = false,
+}: ResetPasswordProps) {
   const [open, setOpen] = useState(false);
   const [resendPassword, { isLoading }] = useSendUserTempPasswordMutation();
 
   const handleResend = async () => {
+    if (disabled) return;
     try {
       await resendPassword(userId).unwrap();
 
@@ -38,9 +43,32 @@ export function ResetPassword({ userId }: ResetPasswordProps) {
   };
 
   return (
-    <AlertDialog open={open} onOpenChange={setOpen}>
+    <AlertDialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (disabled) return;
+        setOpen(nextOpen);
+      }}
+    >
       <AlertDialogTrigger asChild>
-        <Send className="cursor-pointer text-gray-400 hover:text-gray-500 dark:text-gray-300 dark:hover:text-white" />
+        <button
+          type="button"
+          disabled={disabled}
+          title={
+            disabled
+              ? "Password reset is only available for approved admins"
+              : "Reset password"
+          }
+          className="disabled:cursor-not-allowed"
+        >
+          <Send
+            className={
+              disabled
+                ? "text-gray-300 dark:text-gray-600"
+                : "cursor-pointer text-gray-400 hover:text-gray-500 dark:text-gray-300 dark:hover:text-white"
+            }
+          />
+        </button>
       </AlertDialogTrigger>
 
       <AlertDialogContent className="bg-white dark:bg-gray-800 dark:text-white/90 z-50">

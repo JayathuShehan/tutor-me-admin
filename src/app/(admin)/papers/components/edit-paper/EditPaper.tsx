@@ -41,7 +41,7 @@ import { liveTextInputRegisterOptions } from "@/utils/form-normalizers";
 import { sortBySchoolGradeOrder } from "@/utils/grade-filter-order";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { SquarePen } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 
@@ -56,6 +56,11 @@ interface EditPaperProps {
 }
 
 interface Subject {
+  id: string;
+  title: string;
+}
+
+interface GradeOption {
   id: string;
   title: string;
 }
@@ -90,7 +95,9 @@ export function EditPaper({
   const [updatePaper, { isLoading }] = useUpdatePaperMutation();
 
   const { data: gradeData } = useFetchGradesQuery(
-    debouncedGradeSearch ? { title: debouncedGradeSearch } : {},
+    debouncedGradeSearch
+      ? { title: debouncedGradeSearch, limit: 100 }
+      : { limit: 100 },
   );
 
   const { data: gradeDetails, isLoading: isGradeDetailsLoading } =
@@ -103,6 +110,44 @@ export function EditPaper({
   const [initialValues, setInitialValues] = useState<PaperFormValues | null>(
     null,
   );
+
+  const gradeOptions = useMemo(() => {
+    const options: GradeOption[] = gradeData?.results || [];
+
+    if (!gradeDetails?.id || !gradeDetails.title) {
+      return sortBySchoolGradeOrder(options);
+    }
+
+    const hasSelectedGrade = options.some(
+      (option) => option.id === gradeDetails.id,
+    );
+
+    if (hasSelectedGrade) {
+      return sortBySchoolGradeOrder(options);
+    }
+
+    return sortBySchoolGradeOrder([gradeDetails, ...options]);
+  }, [gradeData?.results, gradeDetails]);
+
+  const selectedGradeTitle = useMemo(
+    () => gradeOptions.find((option) => option.id === selectedGrade)?.title,
+    [gradeOptions, selectedGrade],
+  );
+
+  const handleGradeChange = (value: string) => {
+    setValue("grade", value, {
+      shouldDirty: true,
+      shouldValidate: true,
+      shouldTouch: true,
+    });
+    setValue("subject", "", {
+      shouldDirty: true,
+      shouldValidate: true,
+      shouldTouch: true,
+    });
+    setSelectedGradeId(value);
+    setSubjectSearch("");
+  };
 
   const handleDialogClose = (isOpen: boolean) => {
     setOpen(isOpen);
@@ -133,6 +178,7 @@ export function EditPaper({
 
   useEffect(() => {
     if (!open || !gradeDetails) return;
+    if (gradeDetails.id !== gradeId) return;
 
     const subjectExists = gradeDetails.subjects?.some(
       (s: Subject) => s.id === subjectId,
@@ -162,15 +208,10 @@ export function EditPaper({
     if (!selectedGrade) return;
 
     if (selectedGrade !== selectedGradeId) {
-      setValue("subject", "", {
-        shouldDirty: true,
-        shouldValidate: true,
-        shouldTouch: true,
-      });
       setSelectedGradeId(selectedGrade);
       setSubjectSearch("");
     }
-  }, [selectedGrade, selectedGradeId, setValue]);
+  }, [selectedGrade, selectedGradeId]);
 
   const filteredSubjects =
     gradeDetails?.subjects?.filter((sub: Subject) =>
@@ -221,7 +262,9 @@ export function EditPaper({
 
           <div className="flex-1 min-h-0 overflow-x-hidden overflow-y-auto scrollbar-thin px-6 py-4 grid min-w-0 gap-4">
             <div className="grid min-w-0 gap-3">
-              <Label>Title</Label>
+              <Label>
+                Title <span className="text-red-500">*</span>
+              </Label>
               <Input
                 {...register(
                   "title",
@@ -237,7 +280,9 @@ export function EditPaper({
             </div>
 
             <div className="grid min-w-0 gap-3">
-              <Label>Medium</Label>
+              <Label>
+                Medium <span className="text-red-500">*</span>
+              </Label>
 
               <Select
                 value={watch("medium")}
@@ -273,19 +318,19 @@ export function EditPaper({
             </div>
 
             <div className="grid min-w-0 gap-3">
-              <Label>Grade</Label>
+              <Label>
+                Grade <span className="text-red-500">*</span>
+              </Label>
               <Select
                 value={watch("grade") || ""}
-                onValueChange={(value) =>
-                  setValue("grade", value, {
-                    shouldDirty: true,
-                    shouldValidate: true,
-                    shouldTouch: true,
-                  })
-                }
+                onValueChange={handleGradeChange}
               >
                 <SelectTrigger className="w-full min-w-0">
-                  <SelectValue placeholder="Select a grade" />
+                  {selectedGradeTitle ? (
+                    <SelectValue>{selectedGradeTitle}</SelectValue>
+                  ) : (
+                    <SelectValue placeholder="Select a grade" />
+                  )}
                 </SelectTrigger>
 
                 <SelectContent>
@@ -301,19 +346,17 @@ export function EditPaper({
                   <SelectGroup>
                     <SelectLabel>Grades</SelectLabel>
 
-                    {gradeData?.results?.length === 0 && (
+                    {gradeOptions.length === 0 && (
                       <div className="p-3 text-sm text-gray-500">
                         No results found.
                       </div>
                     )}
 
-                    {sortBySchoolGradeOrder(gradeData?.results || []).map(
-                      (grade) => (
-                        <SelectItem key={grade.id} value={grade.id}>
-                          {grade.title}
-                        </SelectItem>
-                      ),
-                    )}
+                    {gradeOptions.map((grade) => (
+                      <SelectItem key={grade.id} value={grade.id}>
+                        {grade.title}
+                      </SelectItem>
+                    ))}
                   </SelectGroup>
                 </SelectContent>
               </Select>
@@ -326,7 +369,9 @@ export function EditPaper({
             </div>
 
             <div className="grid min-w-0 gap-3">
-              <Label>Subject</Label>
+              <Label>
+                Subject <span className="text-red-500">*</span>
+              </Label>
               <Select
                 value={watch("subject") || ""}
                 onValueChange={(value) =>
@@ -378,7 +423,9 @@ export function EditPaper({
             </div>
 
             <div className="grid min-w-0 gap-3">
-              <Label>Year</Label>
+              <Label>
+                Year <span className="text-red-500">*</span>
+              </Label>
               <Input
                 type="text"
                 {...register(
@@ -395,7 +442,9 @@ export function EditPaper({
             </div>
 
             <div className="grid min-w-0 gap-3">
-              <Label>Paper File</Label>
+              <Label>
+                Paper File <span className="text-red-500">*</span>
+              </Label>
 
               {previewUrl && (
                 <p className="w-full min-w-0 break-all text-sm text-gray-600 dark:text-gray-300">

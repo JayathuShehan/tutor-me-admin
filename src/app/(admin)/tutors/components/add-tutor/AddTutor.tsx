@@ -199,11 +199,12 @@ export function AddTutor() {
   const { data: gradesData } = useFetchGradesQuery({ page: 1, limit: 100 });
   const [fetchGradeById] = useLazyFetchGradeByIdQuery();
 
-  const gradeOptions =
-    sortBySchoolGradeOrder(gradesData?.results || []).map((g) => ({
+  const gradeOptions = sortBySchoolGradeOrder(gradesData?.results || []).map(
+    (g) => ({
       value: g.id,
       text: g.title,
-    }));
+    }),
+  );
 
   const [subjectOptions, setSubjectOptions] = useState<
     { value: string; text: string }[]

@@ -12,21 +12,22 @@ import readline from "readline";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const API_BASE = "https://tutorme-backend-api-d7a6cjdkgnedbxf0.southeastasia-01.azurewebsites.net";
+const API_BASE =
+  "https://tutorme-backend-api-d7a6cjdkgnedbxf0.southeastasia-01.azurewebsites.net";
 
 // All 9 Edexcel OL subjects available on platinumacademy.lk
 // Codes are the Pearson Edexcel International GCSE qualification codes
 const EDEXCEL_OL_SUBJECTS = [
-  { title: "Accounting",       code: "4AC1" },
-  { title: "Biology",          code: "4BI1" },
+  { title: "Accounting", code: "4AC1" },
+  { title: "Biology", code: "4BI1" },
   { title: "Business Studies", code: "4BS1" },
-  { title: "Chemistry",        code: "4CH1" },
-  { title: "Commerce",         code: "4CM1" },
-  { title: "Economics",        code: "4EC1" },
+  { title: "Chemistry", code: "4CH1" },
+  { title: "Commerce", code: "4CM1" },
+  { title: "Economics", code: "4EC1" },
   { title: "English Language", code: "4EA1" },
-  { title: "ICT",              code: "4IT1" },
-  { title: "Mathematics",      code: "4MA1" },
-  { title: "Physics",          code: "4PH1" },
+  { title: "ICT", code: "4IT1" },
+  { title: "Mathematics", code: "4MA1" },
+  { title: "Physics", code: "4PH1" },
 ];
 
 const TARGET_GRADE_TITLE = "Edexcel Ordinary Level";
@@ -38,8 +39,16 @@ function normalise(str) {
 }
 
 function prompt(question) {
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  return new Promise((resolve) => rl.question(question, (ans) => { rl.close(); resolve(ans); }));
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  return new Promise((resolve) =>
+    rl.question(question, (ans) => {
+      rl.close();
+      resolve(ans);
+    }),
+  );
 }
 
 async function login(email, password) {
@@ -54,7 +63,7 @@ async function login(email, password) {
 }
 
 async function fetchAllSubjects(token) {
-  const res  = await fetch(`${API_BASE}/v1/subjects?page=1&limit=10000`, {
+  const res = await fetch(`${API_BASE}/v1/subjects?page=1&limit=10000`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   const data = await res.json();
@@ -62,18 +71,22 @@ async function fetchAllSubjects(token) {
 }
 
 async function createSubject(token, title, description) {
-  const res  = await fetch(`${API_BASE}/v1/subjects`, {
+  const res = await fetch(`${API_BASE}/v1/subjects`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
     body: JSON.stringify({ title, description }),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(`Create subject failed: ${JSON.stringify(data)}`);
+  if (!res.ok)
+    throw new Error(`Create subject failed: ${JSON.stringify(data)}`);
   return data;
 }
 
 async function fetchAllGrades(token) {
-  const res  = await fetch(`${API_BASE}/v1/grades?page=1&limit=100`, {
+  const res = await fetch(`${API_BASE}/v1/grades?page=1&limit=100`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   const data = await res.json();
@@ -81,9 +94,12 @@ async function fetchAllGrades(token) {
 }
 
 async function updateGrade(token, gradeId, subjectIds) {
-  const res  = await fetch(`${API_BASE}/v1/grades/${gradeId}`, {
+  const res = await fetch(`${API_BASE}/v1/grades/${gradeId}`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
     body: JSON.stringify({ subjects: subjectIds }),
   });
   const data = await res.json();
@@ -95,7 +111,7 @@ async function updateGrade(token, gradeId, subjectIds) {
 
 async function main() {
   let [, , email, password] = process.argv;
-  if (!email)    email    = await prompt("Email: ");
+  if (!email) email = await prompt("Email: ");
   if (!password) password = await prompt("Password: ");
 
   console.log("\n🔐 Logging in...");
@@ -111,7 +127,9 @@ async function main() {
   // 1. Fetch all existing subjects
   console.log("📋 Fetching existing subjects...");
   const existingSubjects = await fetchAllSubjects(token);
-  const existingMap = new Map(existingSubjects.map((s) => [normalise(s.title), s.id]));
+  const existingMap = new Map(
+    existingSubjects.map((s) => [normalise(s.title), s.id]),
+  );
   console.log(`   Found ${existingSubjects.length} existing subjects\n`);
 
   // 2. Create missing subjects
@@ -148,11 +166,15 @@ async function main() {
   // 3. Find the Edexcel Ordinary Level grade
   console.log("🎓 Fetching grades...");
   const grades = await fetchAllGrades(token);
-  const grade  = grades.find((g) => normalise(g.title) === normalise(TARGET_GRADE_TITLE));
+  const grade = grades.find(
+    (g) => normalise(g.title) === normalise(TARGET_GRADE_TITLE),
+  );
 
   if (!grade) {
     const titles = grades.map((g) => `  • ${g.title}`).join("\n");
-    throw new Error(`Grade "${TARGET_GRADE_TITLE}" not found. Available grades:\n${titles}`);
+    throw new Error(
+      `Grade "${TARGET_GRADE_TITLE}" not found. Available grades:\n${titles}`,
+    );
   }
 
   console.log(`   Found grade: "${grade.title}" (${grade.id})`);

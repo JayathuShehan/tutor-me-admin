@@ -11,7 +11,8 @@ import fs from "fs";
 import path from "path";
 import readline from "readline";
 
-const API_BASE = "https://tutorme-backend-api-d7a6cjdkgnedbxf0.southeastasia-01.azurewebsites.net";
+const API_BASE =
+  "https://tutorme-backend-api-d7a6cjdkgnedbxf0.southeastasia-01.azurewebsites.net";
 const PAPERS_DIR = process.env.PAPERS_DIR ?? "D:/Download/Cambridge-AL-Papers";
 
 const AZURE_ACCOUNT = "tutormeuploads";
@@ -23,11 +24,16 @@ const MEDIUM = "English";
 const MIN_YEAR = Number(process.env.CAMBRIDGE_AL_MIN_YEAR ?? 2020);
 
 function prompt(question) {
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  return new Promise((resolve) => rl.question(question, (answer) => {
-    rl.close();
-    resolve(answer);
-  }));
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  return new Promise((resolve) =>
+    rl.question(question, (answer) => {
+      rl.close();
+      resolve(answer);
+    }),
+  );
 }
 
 async function login(email, password, retries = 5) {
@@ -57,7 +63,10 @@ async function fetchGrade(token) {
   });
   const data = await res.json();
   const grades = data.results ?? [];
-  return grades.find((grade) => normalise(grade.title) === normalise(GRADE_TITLE)) ?? null;
+  return (
+    grades.find((grade) => normalise(grade.title) === normalise(GRADE_TITLE)) ??
+    null
+  );
 }
 
 async function fetchExistingPapers(token) {
@@ -65,13 +74,18 @@ async function fetchExistingPapers(token) {
     headers: { Authorization: `Bearer ${token}` },
   });
   const data = await res.json();
-  return new Set((data.results ?? []).map((paper) => paper.title.toLowerCase().trim()));
+  return new Set(
+    (data.results ?? []).map((paper) => paper.title.toLowerCase().trim()),
+  );
 }
 
 async function createPaper(token, paper) {
   const res = await fetch(`${API_BASE}/v1/papers`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
     body: JSON.stringify(paper),
   });
   const data = await res.json();
@@ -161,12 +175,14 @@ async function main() {
 
   if (!AZURE_KEY) {
     console.error("AZURE_STORAGE_KEY env variable is not set.");
-    console.error("Run: $env:AZURE_STORAGE_KEY='your-key'; node scripts/upload-cambridge-al-papers.mjs");
+    console.error(
+      "Run: $env:AZURE_STORAGE_KEY='your-key'; node scripts/upload-cambridge-al-papers.mjs",
+    );
     process.exit(1);
   }
 
-  const email = process.argv[2] ?? await prompt("Admin email: ");
-  const password = process.argv[3] ?? await prompt("Admin password: ");
+  const email = process.argv[2] ?? (await prompt("Admin email: "));
+  const password = process.argv[3] ?? (await prompt("Admin password: "));
 
   console.log("\nLogging in...");
   const token = await login(email, password);
@@ -174,8 +190,13 @@ async function main() {
 
   console.log(`Fetching ${GRADE_TITLE} grade...`);
   const grade = await fetchGrade(token);
-  if (!grade) throw new Error(`Grade "${GRADE_TITLE}" not found. Run add-cambridge-al-subjects.mjs first.`);
-  console.log(`   Found: ${grade.title} (${(grade.subjects ?? []).length} subjects)\n`);
+  if (!grade)
+    throw new Error(
+      `Grade "${GRADE_TITLE}" not found. Run add-cambridge-al-subjects.mjs first.`,
+    );
+  console.log(
+    `   Found: ${grade.title} (${(grade.subjects ?? []).length} subjects)\n`,
+  );
 
   console.log("Fetching existing papers for dedupe...");
   const existingTitles = await fetchExistingPapers(token);
@@ -188,11 +209,15 @@ async function main() {
   const subjectFolders = fs.readdirSync(PAPERS_DIR).filter((name) => {
     const subjectPath = path.join(PAPERS_DIR, name);
     const manifestPath = path.join(subjectPath, "manifest.json");
-    return fs.statSync(subjectPath).isDirectory() && fs.existsSync(manifestPath);
+    return (
+      fs.statSync(subjectPath).isDirectory() && fs.existsSync(manifestPath)
+    );
   });
 
   if (subjectFolders.length === 0) {
-    console.log("No manifest.json files found. Run scrape-cambridge-al-papers.mjs first.");
+    console.log(
+      "No manifest.json files found. Run scrape-cambridge-al-papers.mjs first.",
+    );
     return;
   }
 
@@ -212,9 +237,15 @@ async function main() {
 
     const subjectId = findSubjectId(grade, folderName);
     if (!subjectId) {
-      const available = (grade.subjects ?? []).map((subject) => subject.title).join(", ") || "none";
-      console.log(`   SKIP: subject "${folderName}" not found in grade. Available: ${available}`);
-      console.log("   Run add-cambridge-al-subjects.mjs first to add missing subjects.");
+      const available =
+        (grade.subjects ?? []).map((subject) => subject.title).join(", ") ||
+        "none";
+      console.log(
+        `   SKIP: subject "${folderName}" not found in grade. Available: ${available}`,
+      );
+      console.log(
+        "   Run add-cambridge-al-subjects.mjs first to add missing subjects.",
+      );
       skipCount += manifest.length;
       continue;
     }

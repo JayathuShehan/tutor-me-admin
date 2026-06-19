@@ -39,7 +39,8 @@ const formatActivityTime = (value: string) => {
 
   if (absoluteDiff < 60) return formatter.format(diffInSeconds, "second");
   const diffInMinutes = Math.round(diffInSeconds / 60);
-  if (Math.abs(diffInMinutes) < 60) return formatter.format(diffInMinutes, "minute");
+  if (Math.abs(diffInMinutes) < 60)
+    return formatter.format(diffInMinutes, "minute");
   const diffInHours = Math.round(diffInMinutes / 60);
   if (Math.abs(diffInHours) < 24) return formatter.format(diffInHours, "hour");
   const diffInDays = Math.round(diffInHours / 24);

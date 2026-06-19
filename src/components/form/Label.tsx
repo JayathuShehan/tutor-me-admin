@@ -1,5 +1,6 @@
 import React, { FC, ReactNode } from "react";
 import { twMerge } from "tailwind-merge";
+import { renderRequiredLabel } from "./required-label";
 
 interface LabelProps {
   htmlFor?: string;
@@ -19,7 +20,7 @@ const Label: FC<LabelProps> = ({ htmlFor, children, className }) => {
         className,
       )}
     >
-      {children}
+      {renderRequiredLabel(children)}
     </label>
   );
 };

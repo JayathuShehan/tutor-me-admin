@@ -14,7 +14,8 @@ export const hasDuplicateTagTitle = (
 
   return tags.some(
     (tag) =>
-      tag.id !== currentTagId && normalizeTagTitle(tag.name) === normalizedTitle,
+      tag.id !== currentTagId &&
+      normalizeTagTitle(tag.name) === normalizedTitle,
   );
 };
 

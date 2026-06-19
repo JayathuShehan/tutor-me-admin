@@ -1,6 +1,7 @@
 import { Check, ChevronDown } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { Spinner } from "../ui/spinner";
+import { renderRequiredLabel } from "./required-label";
 
 interface Option {
   value: string;
@@ -100,7 +101,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
     <div className="w-full" ref={dropdownRef}>
       {label ? (
         <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-white">
-          {label}
+          {renderRequiredLabel(label)}
         </label>
       ) : null}
 

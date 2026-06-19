@@ -18,16 +18,17 @@ import readline from "readline";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const API_BASE    = "https://tutorme-backend-api-d7a6cjdkgnedbxf0.southeastasia-01.azurewebsites.net";
-const PAPERS_DIR  = process.env.PAPERS_DIR ?? "D:/Download/Edexcel-OL-Papers";
+const API_BASE =
+  "https://tutorme-backend-api-d7a6cjdkgnedbxf0.southeastasia-01.azurewebsites.net";
+const PAPERS_DIR = process.env.PAPERS_DIR ?? "D:/Download/Edexcel-OL-Papers";
 
-const AZURE_ACCOUNT   = "tutormeuploads";
+const AZURE_ACCOUNT = "tutormeuploads";
 const AZURE_CONTAINER = "uploads";
-const AZURE_KEY       = process.env.AZURE_STORAGE_KEY ?? "";
+const AZURE_KEY = process.env.AZURE_STORAGE_KEY ?? "";
 
 const GRADE_TITLE = "Edexcel Ordinary Level";
-const MEDIUM      = "English";
-const MIN_YEAR    = Number(process.env.EDEXCEL_OL_MIN_YEAR ?? 2020);
+const MEDIUM = "English";
+const MIN_YEAR = Number(process.env.EDEXCEL_OL_MIN_YEAR ?? 2020);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -36,13 +37,21 @@ function normalise(str) {
 }
 
 function prompt(question) {
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  return new Promise((resolve) => rl.question(question, (ans) => { rl.close(); resolve(ans); }));
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  return new Promise((resolve) =>
+    rl.question(question, (ans) => {
+      rl.close();
+      resolve(ans);
+    }),
+  );
 }
 
 async function login(email, password, retries = 5) {
   for (let i = 0; i < retries; i++) {
-    const res  = await fetch(`${API_BASE}/v1/auth/login`, {
+    const res = await fetch(`${API_BASE}/v1/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -62,16 +71,18 @@ async function login(email, password, retries = 5) {
 }
 
 async function fetchGrade(token) {
-  const res  = await fetch(`${API_BASE}/v1/grades?page=1&limit=100`, {
+  const res = await fetch(`${API_BASE}/v1/grades?page=1&limit=100`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   const data = await res.json();
   const grades = data.results ?? [];
-  return grades.find((g) => normalise(g.title) === normalise(GRADE_TITLE)) ?? null;
+  return (
+    grades.find((g) => normalise(g.title) === normalise(GRADE_TITLE)) ?? null
+  );
 }
 
 async function fetchExistingPapers(token) {
-  const res  = await fetch(`${API_BASE}/v1/papers?page=1&limit=10000`, {
+  const res = await fetch(`${API_BASE}/v1/papers?page=1&limit=10000`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   const data = await res.json();
@@ -79,9 +90,12 @@ async function fetchExistingPapers(token) {
 }
 
 async function createPaper(token, paper) {
-  const res  = await fetch(`${API_BASE}/v1/papers`, {
+  const res = await fetch(`${API_BASE}/v1/papers`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
     body: JSON.stringify(paper),
   });
   const data = await res.json();
@@ -93,31 +107,50 @@ async function createPaper(token, paper) {
 
 async function generateSasUrl(blobName, fileType) {
   const { createHmac } = await import("crypto");
-  const now     = new Date();
+  const now = new Date();
   const expires = new Date(now.getTime() + 60 * 60 * 1000);
-  const toIso   = (d) => d.toISOString().replace(/\.\d+Z$/, "Z");
-  const start   = toIso(now);
-  const end     = toIso(expires);
+  const toIso = (d) => d.toISOString().replace(/\.\d+Z$/, "Z");
+  const start = toIso(now);
+  const end = toIso(expires);
   const permissions = "cw";
   const signedFields = [
-    permissions, start, end,
+    permissions,
+    start,
+    end,
     `/blob/${AZURE_ACCOUNT}/${AZURE_CONTAINER}/${blobName}`,
-    "", "", "https", "2024-11-04", "b", "", "", "", "", "", "", fileType,
+    "",
+    "",
+    "https",
+    "2024-11-04",
+    "b",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    fileType,
   ];
   const sig = createHmac("sha256", Buffer.from(AZURE_KEY, "base64"))
     .update(signedFields.join("\n"), "utf8")
     .digest("base64");
   const params = new URLSearchParams({
-    sp: permissions, st: start, se: end,
-    spr: "https", sv: "2024-11-04", sr: "b", rsct: fileType, sig,
+    sp: permissions,
+    st: start,
+    se: end,
+    spr: "https",
+    sv: "2024-11-04",
+    sr: "b",
+    rsct: fileType,
+    sig,
   });
   return `https://${AZURE_ACCOUNT}.blob.core.windows.net/${AZURE_CONTAINER}/${blobName}?${params}`;
 }
 
 async function uploadToAzure(filePath, fileName) {
-  const fileType   = "application/pdf";
-  const blobName   = `${Date.now()}-${fileName}`;
-  const sasUrl     = await generateSasUrl(blobName, fileType);
+  const fileType = "application/pdf";
+  const blobName = `${Date.now()}-${fileName}`;
+  const sasUrl = await generateSasUrl(blobName, fileType);
   const fileBuffer = fs.readFileSync(filePath);
   const res = await fetch(sasUrl, {
     method: "PUT",
@@ -135,7 +168,7 @@ async function uploadToAzure(filePath, fileName) {
 
 function findSubjectId(grade, subjectName) {
   const target = normalise(subjectName);
-  const match  = (grade.subjects ?? []).find((s) => {
+  const match = (grade.subjects ?? []).find((s) => {
     const db = normalise(s.title);
     return db === target || db.includes(target) || target.includes(db);
   });
@@ -154,12 +187,14 @@ async function main() {
 
   if (!AZURE_KEY) {
     console.error("AZURE_STORAGE_KEY env variable is not set.");
-    console.error("Run: $env:AZURE_STORAGE_KEY='your-key' ; node scripts/upload-edexcel-ol-papers.mjs");
+    console.error(
+      "Run: $env:AZURE_STORAGE_KEY='your-key' ; node scripts/upload-edexcel-ol-papers.mjs",
+    );
     process.exit(1);
   }
 
-  const email    = process.argv[2] ?? await prompt("Admin email: ");
-  const password = process.argv[3] ?? await prompt("Admin password: ");
+  const email = process.argv[2] ?? (await prompt("Admin email: "));
+  const password = process.argv[3] ?? (await prompt("Admin password: "));
 
   console.log("\n🔐 Logging in...");
   const token = await login(email, password);
@@ -167,45 +202,63 @@ async function main() {
 
   console.log(`🎓 Fetching "${GRADE_TITLE}" grade...`);
   const grade = await fetchGrade(token);
-  if (!grade) throw new Error(`Grade "${GRADE_TITLE}" not found. Run add-edexcel-ol-subjects.mjs first.`);
-  console.log(`   Found: ${grade.title} (${(grade.subjects ?? []).length} subjects)\n`);
+  if (!grade)
+    throw new Error(
+      `Grade "${GRADE_TITLE}" not found. Run add-edexcel-ol-subjects.mjs first.`,
+    );
+  console.log(
+    `   Found: ${grade.title} (${(grade.subjects ?? []).length} subjects)\n`,
+  );
 
   console.log("📋 Fetching existing papers (dedup check)...");
   const existingTitles = await fetchExistingPapers(token);
   console.log(`   ${existingTitles.size} papers already in DB\n`);
 
   if (!fs.existsSync(PAPERS_DIR)) {
-    throw new Error(`Downloaded papers folder not found: ${PAPERS_DIR}. Run scrape-edexcel-ol-papers.mjs first.`);
+    throw new Error(
+      `Downloaded papers folder not found: ${PAPERS_DIR}. Run scrape-edexcel-ol-papers.mjs first.`,
+    );
   }
 
   const subjectFolders = fs.readdirSync(PAPERS_DIR).filter((name) => {
-    const subjectPath  = path.join(PAPERS_DIR, name);
+    const subjectPath = path.join(PAPERS_DIR, name);
     const manifestPath = path.join(subjectPath, "manifest.json");
-    return fs.statSync(subjectPath).isDirectory() && fs.existsSync(manifestPath);
+    return (
+      fs.statSync(subjectPath).isDirectory() && fs.existsSync(manifestPath)
+    );
   });
 
   if (subjectFolders.length === 0) {
-    console.log("No manifest.json files found. Run scrape-edexcel-ol-papers.mjs first.");
+    console.log(
+      "No manifest.json files found. Run scrape-edexcel-ol-papers.mjs first.",
+    );
     return;
   }
 
   console.log(`Found ${subjectFolders.length} subject folder(s)\n`);
 
-  let successCount = 0, skipCount = 0, errorCount = 0;
+  let successCount = 0,
+    skipCount = 0,
+    errorCount = 0;
   const uploadedThisRun = new Set();
 
   for (const folderName of subjectFolders) {
-    const subjectDir   = path.join(PAPERS_DIR, folderName);
+    const subjectDir = path.join(PAPERS_DIR, folderName);
     const manifestPath = path.join(subjectDir, "manifest.json");
-    const manifest     = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
 
     console.log(`\n📚 ${folderName} (${manifest.length} papers)`);
 
     const subjectId = findSubjectId(grade, folderName);
     if (!subjectId) {
-      const available = (grade.subjects ?? []).map((s) => s.title).join(", ") || "none";
-      console.log(`   ⚠ SKIP — subject "${folderName}" not found in grade. Available: ${available}`);
-      console.log(`   → Run add-edexcel-ol-subjects.mjs first to add missing subjects.`);
+      const available =
+        (grade.subjects ?? []).map((s) => s.title).join(", ") || "none";
+      console.log(
+        `   ⚠ SKIP — subject "${folderName}" not found in grade. Available: ${available}`,
+      );
+      console.log(
+        `   → Run add-edexcel-ol-subjects.mjs first to add missing subjects.`,
+      );
       skipCount += manifest.length;
       continue;
     }
@@ -238,11 +291,11 @@ async function main() {
         const publicUrl = await uploadToAzure(filePath, filename);
         await createPaper(token, {
           title,
-          medium:  MEDIUM,
+          medium: MEDIUM,
           subject: subjectId,
-          grade:   grade.id,
+          grade: grade.id,
           year,
-          url:     publicUrl,
+          url: publicUrl,
         });
         console.log("✓");
         uploadedThisRun.add(titleKey);

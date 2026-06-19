@@ -17,16 +17,34 @@ import path from "path";
 import { createHash } from "crypto";
 
 const OUTPUT_DIR = process.env.PAPERS_DIR ?? "D:/Download/Edexcel-AL-Papers";
-const DELAY_MS   = 1200;
-const MIN_YEAR   = Number(process.env.EDEXCEL_AL_MIN_YEAR ?? 2020);
+const DELAY_MS = 1200;
+const MIN_YEAR = Number(process.env.EDEXCEL_AL_MIN_YEAR ?? 2020);
 
 const SUBJECTS = [
-  { url: "https://platinumacademy.lk/past-papers-edexcel-al-accounting/",       systemName: "Accounting" },
-  { url: "https://platinumacademy.lk/past-papers-edexcel-al-biology/",          systemName: "Biology" },
-  { url: "https://platinumacademy.lk/past-papers-edexcel-al-business-studies/", systemName: "Business Studies" },
-  { url: "https://platinumacademy.lk/past-papers-edexcel-al-chemistry/",        systemName: "Chemistry" },
-  { url: "https://platinumacademy.lk/past-papers-edexcel-al-economics/",        systemName: "Economics" },
-  { url: "https://platinumacademy.lk/past-papers-edexcel-al-physics/",          systemName: "Physics" },
+  {
+    url: "https://platinumacademy.lk/past-papers-edexcel-al-accounting/",
+    systemName: "Accounting",
+  },
+  {
+    url: "https://platinumacademy.lk/past-papers-edexcel-al-biology/",
+    systemName: "Biology",
+  },
+  {
+    url: "https://platinumacademy.lk/past-papers-edexcel-al-business-studies/",
+    systemName: "Business Studies",
+  },
+  {
+    url: "https://platinumacademy.lk/past-papers-edexcel-al-chemistry/",
+    systemName: "Chemistry",
+  },
+  {
+    url: "https://platinumacademy.lk/past-papers-edexcel-al-economics/",
+    systemName: "Economics",
+  },
+  {
+    url: "https://platinumacademy.lk/past-papers-edexcel-al-physics/",
+    systemName: "Physics",
+  },
 ];
 
 const requestedSubjects = process.argv
@@ -37,7 +55,8 @@ const requestedSubjects = process.argv
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const HEADERS = {
-  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124",
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124",
   Accept: "text/html,application/xhtml+xml,*/*;q=0.8",
   "Accept-Language": "en-US,en;q=0.5",
 };
@@ -86,22 +105,34 @@ function buildGlobalHashSet(outputDir) {
   const globalHashes = new Map();
   if (!fs.existsSync(outputDir)) return globalHashes;
   for (const name of fs.readdirSync(outputDir)) {
-    const subjectDir   = path.join(outputDir, name);
+    const subjectDir = path.join(outputDir, name);
     const manifestPath = path.join(subjectDir, "manifest.json");
-    if (!fs.statSync(subjectDir).isDirectory() || !fs.existsSync(manifestPath)) continue;
+    if (!fs.statSync(subjectDir).isDirectory() || !fs.existsSync(manifestPath))
+      continue;
     let manifest;
-    try { manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8")); } catch { continue; }
+    try {
+      manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+    } catch {
+      continue;
+    }
     let dirty = false;
     for (const entry of manifest) {
       if (!entry.hash) {
         const fp = path.join(subjectDir, entry.filename);
-        if (fs.existsSync(fp)) { entry.hash = computeFileHash(fp); dirty = true; }
+        if (fs.existsSync(fp)) {
+          entry.hash = computeFileHash(fp);
+          dirty = true;
+        }
       }
       if (entry.hash && !globalHashes.has(entry.hash)) {
-        globalHashes.set(entry.hash, { subject: name, filename: entry.filename });
+        globalHashes.set(entry.hash, {
+          subject: name,
+          filename: entry.filename,
+        });
       }
     }
-    if (dirty) fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), "utf8");
+    if (dirty)
+      fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), "utf8");
   }
   return globalHashes;
 }
@@ -111,29 +142,41 @@ function buildGlobalHashSet(outputDir) {
 function extractSections(html) {
   const sections = [];
   const headingRe = /<h[2-6][^>]*>([\s\S]*?)<\/h[2-6]>/gi;
-  const headings  = [];
+  const headings = [];
   let match;
 
   while ((match = headingRe.exec(html)) !== null) {
-    const text = match[1].replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+    const text = match[1]
+      .replace(/<[^>]+>/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
     if (
       /20\d{2}/.test(text) ||
-      /\b(jan(?:uary)?|feb(?:ruary)?|may|june?|oct(?:ober)?|nov(?:ember)?)\b/i.test(text)
+      /\b(jan(?:uary)?|feb(?:ruary)?|may|june?|oct(?:ober)?|nov(?:ember)?)\b/i.test(
+        text,
+      )
     ) {
-      headings.push({ text, start: match.index, end: match.index + match[0].length });
+      headings.push({
+        text,
+        start: match.index,
+        end: match.index + match[0].length,
+      });
     }
   }
 
   for (let i = 0; i < headings.length; i++) {
-    const from  = headings[i].end;
-    const to    = i + 1 < headings.length ? headings[i + 1].start : html.length;
+    const from = headings[i].end;
+    const to = i + 1 < headings.length ? headings[i + 1].start : html.length;
     const chunk = html.substring(from, to);
     const linkRe = /<a[^>]+href=["']([^"']+\.pdf)["'][^>]*>([\s\S]*?)<\/a>/gi;
     const links = [];
     while ((match = linkRe.exec(chunk)) !== null) {
       links.push({
         pdfUrl: match[1],
-        label:  match[2].replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim(),
+        label: match[2]
+          .replace(/<[^>]+>/g, "")
+          .replace(/\s+/g, " ")
+          .trim(),
       });
     }
     if (links.length > 0) sections.push({ heading: headings[i].text, links });
@@ -142,11 +185,14 @@ function extractSections(html) {
   // Fallback: all PDF links on the page when no section headings are found
   if (sections.length === 0) {
     const linkRe = /<a[^>]+href=["']([^"']+\.pdf)["'][^>]*>([\s\S]*?)<\/a>/gi;
-    const links  = [];
+    const links = [];
     while ((match = linkRe.exec(html)) !== null) {
       links.push({
         pdfUrl: match[1],
-        label:  match[2].replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim(),
+        label: match[2]
+          .replace(/<[^>]+>/g, "")
+          .replace(/\s+/g, " ")
+          .trim(),
       });
     }
     if (links.length > 0) sections.push({ heading: "", links });
@@ -157,12 +203,12 @@ function extractSections(html) {
 
 function parseHeading(heading) {
   const yearM = heading.match(/\b(20\d{2})\b/);
-  const year  = yearM ? yearM[1] : null;
+  const year = yearM ? yearM[1] : null;
   const lower = heading.toLowerCase();
   let session = null;
-  if (/\b(may|june?)\b/.test(lower))                                  session = "May Jun";
-  else if (/\b(jan(?:uary)?|feb(?:ruary)?)\b/.test(lower))            session = "Jan Feb";
-  else if (/\b(oct(?:ober)?|nov(?:ember)?)\b/.test(lower))            session = "Oct Nov";
+  if (/\b(may|june?)\b/.test(lower)) session = "May Jun";
+  else if (/\b(jan(?:uary)?|feb(?:ruary)?)\b/.test(lower)) session = "Jan Feb";
+  else if (/\b(oct(?:ober)?|nov(?:ember)?)\b/.test(lower)) session = "Oct Nov";
   return year || session ? { year, session } : null;
 }
 
@@ -192,30 +238,45 @@ function parseFilenameInfo(filename) {
   // ── IAL code format (both cases, both separators) ──────────────────────────
   // wec11-01-que-20230510  wbi14-01-rms-20230302  WBS11_01_que_20200305
   // WBI14_01_que_20230111-1  wac12-01-rms-20230817
-  const ialM = base.match(/^[a-z]{2,4}(\d)(\d)[-_]\d{2}[-_](que|rms|msc|pef)[-_](\d{8})/i);
+  const ialM = base.match(
+    /^[a-z]{2,4}(\d)(\d)[-_]\d{2}[-_](que|rms|msc|pef)[-_](\d{8})/i,
+  );
   if (ialM) {
     const rawType = ialM[3].toLowerCase();
     if (rawType === "pef") return null;
-    const type    = rawType === "que" ? "QP" : "MS";
+    const type = rawType === "que" ? "QP" : "MS";
     const dateStr = ialM[4];
-    const year    = dateStr.slice(0, 4);
-    const month   = parseInt(dateStr.slice(4, 6), 10);
-    return { unit: ialM[2], type, dateYear: year, derivedSession: monthToSession(month) };
+    const year = dateStr.slice(0, 4);
+    const month = parseInt(dateStr.slice(4, 6), 10);
+    return {
+      unit: ialM[2],
+      type,
+      dateYear: year,
+      derivedSession: monthToSession(month),
+    };
   }
 
   // ── OCT with explicit year ──────────────────────────────────────────────────
   // OCT-2022-UNIT-1-QP-2  OCT-21-UNIT-3-MS  OCT-2022-UNIT-1-QP
   const octYearM = base.match(/^OCT[-_](\d{2,4})[-_]UNIT[-_](\d+)[-_](QP|MS)/i);
   if (octYearM) {
-    return { unit: octYearM[2], type: octYearM[3].toUpperCase(),
-             explicitYear: expandYear(octYearM[1]), explicitSession: "Oct Nov" };
+    return {
+      unit: octYearM[2],
+      type: octYearM[3].toUpperCase(),
+      explicitYear: expandYear(octYearM[1]),
+      explicitSession: "Oct Nov",
+    };
   }
 
   // ── OCT without year (year comes from HTML section) ─────────────────────────
   // OCT-UNIT-1-QP-1
   const octNoYearM = base.match(/^OCT[-_]UNIT[-_](\d+)[-_](QP|MS)/i);
   if (octNoYearM) {
-    return { unit: octNoYearM[1], type: octNoYearM[2].toUpperCase(), explicitSession: "Oct Nov" };
+    return {
+      unit: octNoYearM[1],
+      type: octNoYearM[2].toUpperCase(),
+      explicitSession: "Oct Nov",
+    };
   }
 
   // ── MAY named ───────────────────────────────────────────────────────────────
@@ -223,30 +284,48 @@ function parseFilenameInfo(filename) {
   const mayM = base.match(/^MAY?[-_](\d{2,4})[-_]U(\d+)[-_](QP|MS|SB)/i);
   if (mayM) {
     if (mayM[3].toUpperCase() === "SB") return null; // skip study booklets
-    return { unit: mayM[2], type: mayM[3].toUpperCase(),
-             explicitYear: expandYear(mayM[1]), explicitSession: "May Jun" };
+    return {
+      unit: mayM[2],
+      type: mayM[3].toUpperCase(),
+      explicitYear: expandYear(mayM[1]),
+      explicitSession: "May Jun",
+    };
   }
 
   // ── JAN named with 4-digit year ─────────────────────────────────────────────
   // JAN-2022-ECO-UNIT-1-QP  JAN-2022-BIO-U1-QP  JAN-2021-BUSINESS-U1-QP
   // JAN-2022-ACC-UNIT-1-QP  JAN-2022-BUS-UNIT-1-QP
-  const janFullM = base.match(/^JAN(?:[-_]FEB)?[-_](\d{4})[-_][A-Z]+[-_]U(?:NIT[-_])?(\d+)[-_](QP|MS)/i);
+  const janFullM = base.match(
+    /^JAN(?:[-_]FEB)?[-_](\d{4})[-_][A-Z]+[-_]U(?:NIT[-_])?(\d+)[-_](QP|MS)/i,
+  );
   if (janFullM) {
-    return { unit: janFullM[2], type: janFullM[3].toUpperCase(),
-             explicitYear: janFullM[1], explicitSession: "Jan Feb" };
+    return {
+      unit: janFullM[2],
+      type: janFullM[3].toUpperCase(),
+      explicitYear: janFullM[1],
+      explicitSession: "Jan Feb",
+    };
   }
 
   // ── JAN named with 2-digit year ─────────────────────────────────────────────
   // Jan-21-U1-QP-1  Jan-Feb-21-U1-MS  Jan-21-U4-QP
-  const janShortM = base.match(/^Jan(?:[-_]Feb)?[-_](\d{2})[-_]U(\d+)[-_](QP|MS)/i);
+  const janShortM = base.match(
+    /^Jan(?:[-_]Feb)?[-_](\d{2})[-_]U(\d+)[-_](QP|MS)/i,
+  );
   if (janShortM) {
-    return { unit: janShortM[2], type: janShortM[3].toUpperCase(),
-             explicitYear: expandYear(janShortM[1]), explicitSession: "Jan Feb" };
+    return {
+      unit: janShortM[2],
+      type: janShortM[3].toUpperCase(),
+      explicitYear: expandYear(janShortM[1]),
+      explicitSession: "Jan Feb",
+    };
   }
 
   // ── IAL named (no year in filename; relies on HTML section) ─────────────────
   // IAL-Chemistry-Unit-1-Question-Paper  IAL-Physics-Unit-3-Marking-Scheme-1
-  const ialNamedM = base.match(/^IAL-\w+[-_]Unit[-_](\d+)[-_](Question[-_]Paper|Marking[-_]Scheme)(?:[-_]\d+)?$/i);
+  const ialNamedM = base.match(
+    /^IAL-\w+[-_]Unit[-_](\d+)[-_](Question[-_]Paper|Marking[-_]Scheme)(?:[-_]\d+)?$/i,
+  );
   if (ialNamedM) {
     const type = /marking/i.test(ialNamedM[2]) ? "MS" : "QP";
     return { unit: ialNamedM[1], type }; // year / session must come from HTML section
@@ -254,15 +333,23 @@ function parseFilenameInfo(filename) {
 
   // ── IGCSE 4XX format (mostly pre-2020; included for 2020 papers) ─────────────
   // 4BI1_1B_que_20200305  4CH1_1C_rms_20190520
-  const igcseM = base.match(/^4[A-Z]{2}[01]_([0-9][A-Z]{1,2}R?)_(que|rms|msc|pef)_(\d{8})/i);
+  const igcseM = base.match(
+    /^4[A-Z]{2}[01]_([0-9][A-Z]{1,2}R?)_(que|rms|msc|pef)_(\d{8})/i,
+  );
   if (igcseM) {
     const rawType = igcseM[2].toLowerCase();
     if (rawType === "pef") return null;
-    const type    = rawType === "que" ? "QP" : "MS";
+    const type = rawType === "que" ? "QP" : "MS";
     const dateStr = igcseM[3];
-    const year    = dateStr.slice(0, 4);
-    const month   = parseInt(dateStr.slice(4, 6), 10);
-    return { unit: igcseM[1], type, dateYear: year, derivedSession: monthToSession(month), isPaper: true };
+    const year = dateStr.slice(0, 4);
+    const month = parseInt(dateStr.slice(4, 6), 10);
+    return {
+      unit: igcseM[1],
+      type,
+      dateYear: year,
+      derivedSession: monthToSession(month),
+      isPaper: true,
+    };
   }
 
   return null;
@@ -271,7 +358,10 @@ function parseFilenameInfo(filename) {
 // ─── Title / filename builders ────────────────────────────────────────────────
 
 function slugify(str) {
-  return str.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return str
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
 function formatTypeForFilename(type) {
@@ -279,8 +369,8 @@ function formatTypeForFilename(type) {
 }
 
 function buildTitle(subjectName, year, session, unit, type, isPaper) {
-  const docType    = type === "MS" ? "Mark Scheme" : "Question Paper";
-  const unitLabel  = isPaper ? `Paper ${unit}` : `Unit ${unit}`;
+  const docType = type === "MS" ? "Mark Scheme" : "Question Paper";
+  const unitLabel = isPaper ? `Paper ${unit}` : `Unit ${unit}`;
   const sessionStr = session ? ` ${session}` : "";
   return `Edexcel A Level ${subjectName} ${year}${sessionStr} ${unitLabel} ${docType}`;
 }
@@ -292,11 +382,14 @@ function buildLocalFilename(subjectName, year, session, unit, type) {
 
 function makeUniqueFilename(filename, usedNames) {
   if (!usedNames.has(filename)) return filename;
-  const ext  = path.extname(filename);
+  const ext = path.extname(filename);
   const base = path.basename(filename, ext);
   let i = 2;
   let candidate = `${base}-${i}${ext}`;
-  while (usedNames.has(candidate)) { i++; candidate = `${base}-${i}${ext}`; }
+  while (usedNames.has(candidate)) {
+    i++;
+    candidate = `${base}-${i}${ext}`;
+  }
   return candidate;
 }
 
@@ -309,19 +402,25 @@ async function main() {
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 
   const globalHashes = buildGlobalHashSet(OUTPUT_DIR);
-  console.log(`Content-hash index: ${globalHashes.size} unique file(s) tracked\n`);
+  console.log(
+    `Content-hash index: ${globalHashes.size} unique file(s) tracked\n`,
+  );
 
   const subjectsToScrape = requestedSubjects.length
-    ? SUBJECTS.filter((s) => requestedSubjects.includes(s.systemName.toLowerCase()))
+    ? SUBJECTS.filter((s) =>
+        requestedSubjects.includes(s.systemName.toLowerCase()),
+      )
     : SUBJECTS;
 
   if (subjectsToScrape.length === 0) {
-    throw new Error(`No matching subjects found for: ${requestedSubjects.join(", ")}`);
+    throw new Error(
+      `No matching subjects found for: ${requestedSubjects.join(", ")}`,
+    );
   }
 
   let totalDownloaded = 0;
-  let totalSkipped    = 0;
-  let totalErrors     = 0;
+  let totalSkipped = 0;
+  let totalErrors = 0;
 
   for (const { url, systemName } of subjectsToScrape) {
     console.log(`\n📚 ${systemName}`);
@@ -343,14 +442,14 @@ async function main() {
       continue;
     }
 
-    const subjectDir   = path.join(OUTPUT_DIR, systemName);
+    const subjectDir = path.join(OUTPUT_DIR, systemName);
     fs.mkdirSync(subjectDir, { recursive: true });
 
     const manifestPath = path.join(subjectDir, "manifest.json");
-    const manifest     = fs.existsSync(manifestPath)
+    const manifest = fs.existsSync(manifestPath)
       ? JSON.parse(fs.readFileSync(manifestPath, "utf8"))
       : [];
-    const existingUrls  = new Set(manifest.map((e) => e.sourceUrl));
+    const existingUrls = new Set(manifest.map((e) => e.sourceUrl));
     const usedFilenames = new Set(manifest.map((e) => e.filename));
     let newEntries = 0;
 
@@ -364,7 +463,7 @@ async function main() {
         }
 
         const urlFilename = path.basename(new URL(pdfUrl).pathname);
-        const fileInfo    = parseFilenameInfo(urlFilename);
+        const fileInfo = parseFilenameInfo(urlFilename);
 
         if (!fileInfo) {
           // pef / SB / unrecognised → skip silently
@@ -375,11 +474,22 @@ async function main() {
         const { unit, type, isPaper } = fileInfo;
 
         // Year priority: explicit keyword > HTML section > filename date
-        const year = fileInfo.explicitYear ?? sectionMeta?.year ?? fileInfo.dateYear ?? "0";
+        const year =
+          fileInfo.explicitYear ??
+          sectionMeta?.year ??
+          fileInfo.dateYear ??
+          "0";
         // Session priority: explicit keyword > HTML section > filename-derived
-        const session = fileInfo.explicitSession ?? sectionMeta?.session ?? fileInfo.derivedSession ?? null;
+        const session =
+          fileInfo.explicitSession ??
+          sectionMeta?.session ??
+          fileInfo.derivedSession ??
+          null;
 
-        if (!unit || !type) { totalSkipped++; continue; }
+        if (!unit || !type) {
+          totalSkipped++;
+          continue;
+        }
 
         const numericYear = Number(year);
         if (!Number.isInteger(numericYear) || numericYear < MIN_YEAR) {
@@ -387,13 +497,35 @@ async function main() {
           continue;
         }
 
-        const title        = buildTitle(systemName, year, session, unit, type, isPaper);
-        const baseFilename = buildLocalFilename(systemName, year, session, unit, type);
+        const title = buildTitle(
+          systemName,
+          year,
+          session,
+          unit,
+          type,
+          isPaper,
+        );
+        const baseFilename = buildLocalFilename(
+          systemName,
+          year,
+          session,
+          unit,
+          type,
+        );
         const localFilename = makeUniqueFilename(baseFilename, usedFilenames);
-        const localPath     = path.join(subjectDir, localFilename);
+        const localPath = path.join(subjectDir, localFilename);
 
         if (fs.existsSync(localPath)) {
-          manifest.push({ filename: localFilename, title, subject: systemName, session, year, unit, type, sourceUrl: pdfUrl });
+          manifest.push({
+            filename: localFilename,
+            title,
+            subject: systemName,
+            session,
+            year,
+            unit,
+            type,
+            sourceUrl: pdfUrl,
+          });
           existingUrls.add(pdfUrl);
           usedFilenames.add(localFilename);
           totalSkipped++;
@@ -407,13 +539,28 @@ async function main() {
           const hash = computeFileHash(localPath);
           const dupe = globalHashes.get(hash);
           if (dupe) {
-            console.log(`⚠ SKIP (same content as ${dupe.subject}/${dupe.filename})`);
+            console.log(
+              `⚠ SKIP (same content as ${dupe.subject}/${dupe.filename})`,
+            );
             fs.unlinkSync(localPath);
             totalSkipped++;
           } else {
             console.log("✓");
-            globalHashes.set(hash, { subject: systemName, filename: localFilename });
-            manifest.push({ filename: localFilename, title, subject: systemName, session, year, unit, type, sourceUrl: pdfUrl, hash });
+            globalHashes.set(hash, {
+              subject: systemName,
+              filename: localFilename,
+            });
+            manifest.push({
+              filename: localFilename,
+              title,
+              subject: systemName,
+              session,
+              year,
+              unit,
+              type,
+              sourceUrl: pdfUrl,
+              hash,
+            });
             existingUrls.add(pdfUrl);
             usedFilenames.add(localFilename);
             totalDownloaded++;
@@ -437,7 +584,9 @@ async function main() {
   console.log(`  ✓ Downloaded : ${totalDownloaded}`);
   console.log(`  ⚠ Skipped   : ${totalSkipped}`);
   console.log(`  ✗ Errors    : ${totalErrors}`);
-  console.log("\nNext step: node scripts/add-edexcel-al-subjects.mjs <email> <password>");
+  console.log(
+    "\nNext step: node scripts/add-edexcel-al-subjects.mjs <email> <password>",
+  );
 }
 
 main().catch((err) => {

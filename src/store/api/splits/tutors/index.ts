@@ -107,6 +107,14 @@ export const TutorsApi = baseApi.injectEndpoints({
       invalidatesTags: ["FindATutor", "Users"],
     }),
 
+    sendReferralCode: build.mutation<void, string>({
+      query: (id) => ({
+        url: `${Endpoints.FindATutor}/send-referral-code/${id}`,
+        method: "POST",
+      }),
+      invalidatesTags: ["FindATutor", "Users"],
+    }),
+
     fetchMatchingTutors: build.query<
       { count: number; tutors: Tutor[] },
       { subjects: string[]; tutorType?: string }
@@ -132,5 +140,6 @@ export const {
   useUpdateTutorStatusMutation,
   useDeleteTutorMutation,
   useSendTempPasswordTutorMutation,
+  useSendReferralCodeMutation,
   useFetchMatchingTutorsQuery,
 } = TutorsApi;

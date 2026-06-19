@@ -300,7 +300,7 @@ export default function AddAdminForm() {
                   htmlFor="name"
                   className="text-sm font-medium text-gray-700 dark:text-gray-200"
                 >
-                  Admin Name *
+                  Admin Name <span className="text-red-500">*</span>
                 </label>
                 <Input id="name" {...nameRegister} />
                 {errors.name && (
@@ -313,7 +313,7 @@ export default function AddAdminForm() {
                   htmlFor="email"
                   className="text-sm font-medium text-gray-700 dark:text-gray-200"
                 >
-                  Email *
+                  Email <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <Input
@@ -373,7 +373,7 @@ export default function AddAdminForm() {
                   htmlFor="phoneNumber"
                   className="text-sm font-medium text-gray-700 dark:text-gray-200"
                 >
-                  Contact Number *
+                  Contact Number <span className="text-red-500">*</span>
                 </label>
                 <Input
                   id="phoneNumber"
@@ -394,7 +394,7 @@ export default function AddAdminForm() {
                   htmlFor="password"
                   className="text-sm font-medium text-gray-700 dark:text-gray-200"
                 >
-                  Password *
+                  Password <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <Input

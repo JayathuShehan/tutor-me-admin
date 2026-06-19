@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, X } from "lucide-react";
+import { Loader2, Upload } from "lucide-react";
 import { default as NextImage } from "next/image";
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
@@ -115,60 +115,57 @@ export default function FileUploadDropzone({
   return (
     <div
       {...getRootProps()}
-      className={`w-full max-w-full overflow-hidden rounded-md border-2 border-dashed p-5 sm:p-6 text-center transition-colors cursor-pointer
+      className={`w-full max-w-full overflow-hidden rounded-xl border-2 border-dashed p-8 flex flex-col items-center gap-3 text-center transition-colors cursor-pointer
         ${
           isDragActive
-            ? "border-brand-300 bg-brand-50/40 dark:border-brand-500 dark:bg-gray-800/80"
-            : "border-gray-300 bg-white hover:border-brand-300 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:border-brand-500 dark:hover:bg-gray-800/80"
+            ? "border-blue-400 bg-blue-50/50 dark:border-blue-500 dark:bg-blue-950/20"
+            : "border-gray-300 bg-white hover:border-blue-400 hover:bg-blue-50/50 dark:border-gray-600 dark:bg-gray-900 dark:hover:border-blue-500 dark:hover:bg-blue-950/20"
         }`}
     >
       <input {...getInputProps()} />
       {uploading ? (
-        <div className="flex flex-col items-center justify-center space-y-2">
-          <Loader2 className="h-6 w-6 animate-spin text-brand-500" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+        <>
+          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             Uploading...
           </p>
-        </div>
+        </>
       ) : isDragActive ? (
-        <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-          Drop the file here...
-        </p>
+        <>
+          <Upload className="w-8 h-8 text-blue-400" />
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Drop the file here...
+          </p>
+        </>
       ) : (
         <>
-          <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-            Drag & drop or tap to upload
+          <Upload className="w-8 h-8 text-gray-400" />
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            {fileName ? fileName : "Drag & drop or tap to upload"}
           </p>
-
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-xs text-gray-400">
             {imageOnly
               ? "Only PNG, JPG, or JPEG files are allowed"
               : "Click or drag a file here to upload"}
           </p>
 
           {uploadError && (
-            <p className="mt-2 text-sm text-red-500">{uploadError}</p>
+            <p className="text-sm text-red-500">{uploadError}</p>
           )}
 
           {fileName && (
-            <div className="mt-3 flex w-full min-w-0 items-center justify-center gap-2 overflow-hidden px-2">
-              <p className="min-w-0 flex-1 truncate text-sm text-gray-500 dark:text-gray-400">
-                {fileName}
-              </p>
-
-              <button
-                type="button"
-                onClick={removeFile}
-                className="shrink-0 text-gray-400 hover:text-red-500"
-                aria-label="Remove uploaded file"
-              >
-                <X size={16} />
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); removeFile(); }}
+              className="text-xs text-red-500 hover:text-red-700"
+              aria-label="Remove uploaded file"
+            >
+              Remove
+            </button>
           )}
 
           {previewUrl && (
-            <div className="mt-3 flex w-full min-w-0 justify-center overflow-hidden">
+            <div className="flex w-full min-w-0 justify-center overflow-hidden">
               <NextImage
                 src={previewUrl}
                 alt="Preview"

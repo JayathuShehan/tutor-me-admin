@@ -5,7 +5,7 @@ const digitsOnlyRegex = /^\d{10}$/;
 const zipRegex = /^\d{5}(-\d{4})?$/;
 
 export const updateUserSchema = z.object({
-  avatar: z.string().min(1, "Profile image is required"),
+  avatar: z.string(),
 
   name: z
     .string()

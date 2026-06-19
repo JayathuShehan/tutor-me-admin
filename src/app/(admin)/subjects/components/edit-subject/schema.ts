@@ -6,9 +6,12 @@ const noExtraSpaces = (field: string) =>
     .string()
     .transform((value) => normalizeTextSpaces(value) as string)
     .pipe(
-      z.string().min(1, `${field} is required`).refine((val) => val.length > 0, {
-        message: `${field} cannot be empty`,
-      }),
+      z
+        .string()
+        .min(1, `${field} is required`)
+        .refine((val) => val.length > 0, {
+          message: `${field} cannot be empty`,
+        }),
     );
 
 const subjectTitle = () =>

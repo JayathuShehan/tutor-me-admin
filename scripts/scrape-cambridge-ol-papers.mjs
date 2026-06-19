@@ -16,24 +16,63 @@ import path from "path";
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const OUTPUT_DIR = process.env.PAPERS_DIR ?? "D:/Download/Cambridge-OL-Papers";
-const DELAY_MS   = 1500;
-const MIN_YEAR   = 2020;
+const DELAY_MS = 1500;
+const MIN_YEAR = 2020;
 
 // Subject pages available on platinumacademy.lk → mapped to our system subject name
 const SUBJECTS = [
-  { url: "https://platinumacademy.lk/past-papers-cambridge-ol-accounting",        systemName: "Accounting" },
-  { url: "https://platinumacademy.lk/past-papers-cambridge-ol-biology",           systemName: "Biology" },
-  { url: "https://platinumacademy.lk/past-papers-cambridge-ol-business-studies/", systemName: "Business Studies" },
-  { url: "https://platinumacademy.lk/past-papers-cambridge-ol-chemistry",         systemName: "Chemistry" },
-  { url: "https://platinumacademy.lk/past-papers-cambridge-ol-commerce/",         systemName: "Commerce" },
-  { url: "https://platinumacademy.lk/past-papers-cambridge-ol-computer-science",  systemName: "Computer Science" },
-  { url: "https://platinumacademy.lk/past-papers-cambridge-ol-economics/",        systemName: "Economics" },
-  { url: "https://platinumacademy.lk/past-papers-cambridge-ol-english",           systemName: "English Language" },
-  { url: "https://platinumacademy.lk/past-papers-cambridge-ol-eng-literature",    systemName: "Literature in English" },
-  { url: "https://platinumacademy.lk/past-papers-cambridge-ol-geography/",        systemName: "Geography" },
-  { url: "https://platinumacademy.lk/past-papers-cambridge-ol-ict/",              systemName: "ICT" },
-  { url: "https://platinumacademy.lk/past-papers-cambridge-ol-maths/",            systemName: "Mathematics (Syllabus D)" },
-  { url: "https://platinumacademy.lk/past-papers-cambridge-ol-physics/",          systemName: "Physics" },
+  {
+    url: "https://platinumacademy.lk/past-papers-cambridge-ol-accounting",
+    systemName: "Accounting",
+  },
+  {
+    url: "https://platinumacademy.lk/past-papers-cambridge-ol-biology",
+    systemName: "Biology",
+  },
+  {
+    url: "https://platinumacademy.lk/past-papers-cambridge-ol-business-studies/",
+    systemName: "Business Studies",
+  },
+  {
+    url: "https://platinumacademy.lk/past-papers-cambridge-ol-chemistry",
+    systemName: "Chemistry",
+  },
+  {
+    url: "https://platinumacademy.lk/past-papers-cambridge-ol-commerce/",
+    systemName: "Commerce",
+  },
+  {
+    url: "https://platinumacademy.lk/past-papers-cambridge-ol-computer-science",
+    systemName: "Computer Science",
+  },
+  {
+    url: "https://platinumacademy.lk/past-papers-cambridge-ol-economics/",
+    systemName: "Economics",
+  },
+  {
+    url: "https://platinumacademy.lk/past-papers-cambridge-ol-english",
+    systemName: "English Language",
+  },
+  {
+    url: "https://platinumacademy.lk/past-papers-cambridge-ol-eng-literature",
+    systemName: "Literature in English",
+  },
+  {
+    url: "https://platinumacademy.lk/past-papers-cambridge-ol-geography/",
+    systemName: "Geography",
+  },
+  {
+    url: "https://platinumacademy.lk/past-papers-cambridge-ol-ict/",
+    systemName: "ICT",
+  },
+  {
+    url: "https://platinumacademy.lk/past-papers-cambridge-ol-maths/",
+    systemName: "Mathematics (Syllabus D)",
+  },
+  {
+    url: "https://platinumacademy.lk/past-papers-cambridge-ol-physics/",
+    systemName: "Physics",
+  },
 ];
 
 const requestedSubjects = process.argv
@@ -46,8 +85,9 @@ const requestedSubjects = process.argv
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const HEADERS = {
-  "User-Agent":      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124",
-  "Accept":          "text/html,application/xhtml+xml,*/*;q=0.8",
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124",
+  Accept: "text/html,application/xhtml+xml,*/*;q=0.8",
   "Accept-Language": "en-US,en;q=0.5",
 };
 
@@ -104,14 +144,17 @@ function extractSections(html) {
 
   for (let i = 0; i < allHeadings.length; i++) {
     const from = allHeadings[i].end;
-    const to   = i + 1 < allHeadings.length ? allHeadings[i + 1].end - allHeadings[i + 1].text.length - 10 : html.length;
+    const to =
+      i + 1 < allHeadings.length
+        ? allHeadings[i + 1].end - allHeadings[i + 1].text.length - 10
+        : html.length;
     const chunk = html.substring(from, to);
 
     const linkRe = /<a[^>]+href="([^"]+\.pdf)"[^>]*>([\s\S]*?)<\/a>/gi;
-    const links  = [];
+    const links = [];
     while ((m = linkRe.exec(chunk)) !== null) {
       const pdfUrl = m[1];
-      const label  = m[2].replace(/<[^>]+>/g, "").trim();
+      const label = m[2].replace(/<[^>]+>/g, "").trim();
       if (pdfUrl) links.push({ pdfUrl, label });
     }
 
@@ -132,14 +175,14 @@ function parseHeading(heading) {
     return yearOnly ? { session: yearOnly[1], year: yearOnly[1] } : null;
   }
   const sessionStr = m[1].trim();
-  const yearMatch  = sessionStr.match(/(\d{4})/);
+  const yearMatch = sessionStr.match(/(\d{4})/);
   return { session: sessionStr, year: yearMatch ? yearMatch[1] : null };
 }
 
 // "7707_w25_qp_12.pdf" → { session: "Oct Nov 2025", year: "2025", type: "QP", paper: "12" }
 function parseFilenameCode(filename) {
   const base = path.basename(filename, ".pdf");
-  const m    = base.match(/^[a-z0-9]+_([ws])(\d{2})_(qp|ms)_(\d+)/i);
+  const m = base.match(/^[a-z0-9]+_([ws])(\d{2})_(qp|ms)_(\d+)/i);
   if (!m) {
     const unitMatch = base.match(/^Unit-(\d+)-(\d+)-(QP|MS)$/i);
     if (!unitMatch) return null;
@@ -152,14 +195,14 @@ function parseFilenameCode(filename) {
     };
   }
 
-  const season   = m[1].toLowerCase();
-  const year2    = parseInt(m[2], 10);
+  const season = m[1].toLowerCase();
+  const year2 = parseInt(m[2], 10);
   const fullYear = year2 >= 90 ? 1900 + year2 : 2000 + year2;
   return {
-    year:    String(fullYear),
+    year: String(fullYear),
     session: season === "w" ? `Oct Nov ${fullYear}` : `May Jun ${fullYear}`,
-    type:    m[3].toUpperCase(),
-    paper:   m[4],
+    type: m[3].toUpperCase(),
+    paper: m[4],
   };
 }
 
@@ -185,7 +228,10 @@ function shouldIncludeYear(year) {
 }
 
 function slugify(str) {
-  return str.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return str
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
 function makeUniqueFilename(filename, usedNames) {
@@ -211,7 +257,9 @@ async function main() {
   console.log(`Output: ${OUTPUT_DIR}\n`);
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 
-  let totalDownloaded = 0, totalSkipped = 0, totalErrors = 0;
+  let totalDownloaded = 0,
+    totalSkipped = 0,
+    totalErrors = 0;
   const subjectsToScrape = requestedSubjects.length
     ? SUBJECTS.filter((subject) =>
         requestedSubjects.includes(subject.systemName.toLowerCase()),
@@ -219,7 +267,9 @@ async function main() {
     : SUBJECTS;
 
   if (subjectsToScrape.length === 0) {
-    throw new Error(`No matching subjects found for: ${requestedSubjects.join(", ")}`);
+    throw new Error(
+      `No matching subjects found for: ${requestedSubjects.join(", ")}`,
+    );
   }
 
   for (const { url, systemName } of subjectsToScrape) {
@@ -265,29 +315,39 @@ async function main() {
           continue;
         }
 
-        const urlFilename  = path.basename(new URL(pdfUrl).pathname);
+        const urlFilename = path.basename(new URL(pdfUrl).pathname);
         const filenameMeta = parseFilenameCode(urlFilename);
-        const labelMeta    = parseLabelInfo(label);
+        const labelMeta = parseLabelInfo(label);
 
         // Determine session/year: prefer filename parse, fall back to heading
-        const session = filenameMeta?.session ?? headingMeta?.session ?? "Unknown";
-        const year    = filenameMeta?.year    ?? headingMeta?.year    ?? "0000";
-        const paper   = filenameMeta?.paper   ?? labelMeta?.paper     ?? "0";
-        const type    = filenameMeta?.type    ?? labelMeta?.type      ?? "QP";
+        const session =
+          filenameMeta?.session ?? headingMeta?.session ?? "Unknown";
+        const year = filenameMeta?.year ?? headingMeta?.year ?? "0000";
+        const paper = filenameMeta?.paper ?? labelMeta?.paper ?? "0";
+        const type = filenameMeta?.type ?? labelMeta?.type ?? "QP";
 
         if (!shouldIncludeYear(year)) {
           totalSkipped++;
           continue;
         }
 
-        const baseFilename  = `cambridge-ol-${slugify(systemName)}-${slugify(session)}-paper-${paper}-${formatTypeForFilename(type)}.pdf`;
+        const baseFilename = `cambridge-ol-${slugify(systemName)}-${slugify(session)}-paper-${paper}-${formatTypeForFilename(type)}.pdf`;
         const localFilename = makeUniqueFilename(baseFilename, usedFilenames);
-        const localPath     = path.join(subjectDir, localFilename);
-        const title         = buildTitle(systemName, session, paper, type);
+        const localPath = path.join(subjectDir, localFilename);
+        const title = buildTitle(systemName, session, paper, type);
 
         // Skip if already downloaded
         if (fs.existsSync(localPath)) {
-          manifest.push({ filename: localFilename, title, subject: systemName, session, year, paper, type, sourceUrl: pdfUrl });
+          manifest.push({
+            filename: localFilename,
+            title,
+            subject: systemName,
+            session,
+            year,
+            paper,
+            type,
+            sourceUrl: pdfUrl,
+          });
           existingUrls.add(pdfUrl);
           usedFilenames.add(localFilename);
           totalSkipped++;
@@ -299,7 +359,16 @@ async function main() {
         try {
           await downloadBinary(pdfUrl, localPath);
           console.log("✓");
-          manifest.push({ filename: localFilename, title, subject: systemName, session, year, paper, type, sourceUrl: pdfUrl });
+          manifest.push({
+            filename: localFilename,
+            title,
+            subject: systemName,
+            session,
+            year,
+            paper,
+            type,
+            sourceUrl: pdfUrl,
+          });
           existingUrls.add(pdfUrl);
           usedFilenames.add(localFilename);
           totalDownloaded++;
@@ -323,7 +392,9 @@ async function main() {
   console.log(`  ✓ Downloaded : ${totalDownloaded}`);
   console.log(`  ⚠ Skipped   : ${totalSkipped}`);
   console.log(`  ✗ Errors    : ${totalErrors}`);
-  console.log(`\nNext step: node scripts/upload-cambridge-ol-papers.mjs <email> <password>`);
+  console.log(
+    `\nNext step: node scripts/upload-cambridge-ol-papers.mjs <email> <password>`,
+  );
 }
 
 main().catch((err) => {

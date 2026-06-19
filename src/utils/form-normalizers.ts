@@ -23,6 +23,9 @@ export const stripLeadingSpaces = (value: string) => value.replace(/^\s+/, "");
 export const collapseTextSpaces = (value: string) =>
   value.replace(/^\s+/, "").replace(/\s+/g, " ").trimEnd();
 
+export const collapseRepeatedSpaces = (value: string) =>
+  value.replace(/^\s+/, "").replace(/\s{2,}/g, " ");
+
 export const normalizeLettersAndSpacesInput = (value: string) =>
   value
     .replace(/[^A-Za-z ]/g, "")
@@ -60,9 +63,41 @@ export const liveTextInputRegisterOptions = <T extends FieldValues>(
     }
   },
   onBlur: (event: FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setValue(name, collapseTextSpaces(event.target.value) as PathValue<T, Path<T>>, {
-      shouldValidate: true,
-    });
+    setValue(
+      name,
+      collapseTextSpaces(event.target.value) as PathValue<T, Path<T>>,
+      {
+        shouldValidate: true,
+      },
+    );
+  },
+});
+
+// Like liveTextInputRegisterOptions, but also collapses repeated spaces to a
+// single one as the user types, so only one space between words is allowed.
+export const singleSpaceTextInputRegisterOptions = <T extends FieldValues>(
+  name: Path<T>,
+  setValue: UseFormSetValue<T>,
+  shouldValidateOnChange = false,
+): Pick<RegisterOptions<T, Path<T>>, "onChange" | "onBlur"> => ({
+  onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const cleaned = collapseRepeatedSpaces(event.target.value);
+
+    if (cleaned !== event.target.value) {
+      event.target.value = cleaned;
+      setValue(name, cleaned as PathValue<T, Path<T>>, {
+        shouldValidate: shouldValidateOnChange,
+      });
+    }
+  },
+  onBlur: (event: FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setValue(
+      name,
+      collapseTextSpaces(event.target.value) as PathValue<T, Path<T>>,
+      {
+        shouldValidate: true,
+      },
+    );
   },
 });
 

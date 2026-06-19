@@ -17,6 +17,7 @@ import {
   useDeleteUserMutation,
   useFetchUsersQuery,
   useUpdateUserMutation,
+  useUpdateUserStatusMutation,
 } from "@/store/api/splits/users";
 import { getErrorInApiResult } from "@/utils/api";
 import {
@@ -24,7 +25,9 @@ import {
   ArrowUp,
   CheckCircle,
   ChevronsUpDown,
+  Copy,
   Loader2,
+  Mail,
   Search,
   ShieldOff,
   SquarePen,
@@ -38,6 +41,7 @@ import toast from "react-hot-toast";
 import { DeleteUser } from "./DeleteUser";
 import { UpdateUser } from "./edit-user/UpdateUser";
 import { ResetPassword } from "./ResetPassword";
+import { SendReferralCode } from "./SendReferralCode";
 import { UserDetails } from "./ViewDetails";
 interface User {
   id: string;
@@ -62,6 +66,7 @@ interface User {
   gender?: "male" | "female" | "other";
   avatar?: string;
   createdAt?: string;
+  referralCode?: string;
 }
 
 type UserRoleFilter = "all" | "admin" | "tutor";
@@ -93,7 +98,7 @@ function StatusBadge({ status }: { status: string }) {
 
   return (
     <span
-      className={`inline-block rounded-full border px-2.5 py-0.5 text-xs font-semibold capitalize ${cls}`}
+      className={`inline-block min-w-22 text-center rounded-full border px-2.5 py-0.5 text-xs font-semibold capitalize ${cls}`}
     >
       {normalizedStatus}
     </span>
@@ -140,6 +145,8 @@ function SortableHeader({
 function UserStatusActions({ user }: { user: User }) {
   const [updateUser, { isLoading }] = useUpdateUserMutation();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [showReject, setShowReject] = useState(false);
+  const [showSuspend, setShowSuspend] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const btnRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -212,6 +219,15 @@ function UserStatusActions({ user }: { user: User }) {
   const updateStatus = async (nextStatus: UserStatus) => {
     setDropdownOpen(false);
 
+    if (nextStatus === "rejected") {
+      setShowReject(true);
+      return;
+    }
+    if (nextStatus === "suspended") {
+      setShowSuspend(true);
+      return;
+    }
+
     const result = await updateUser({
       id: user.id,
       status: nextStatus,
@@ -223,8 +239,11 @@ function UserStatusActions({ user }: { user: User }) {
       return;
     }
 
+    const label = user.name || user.email || "User";
     toast.success(
-      `${user.name || user.email || "User"} status changed to ${nextStatus}.`,
+      nextStatus === "approved"
+        ? `"${label}" has been approved and notified by email.`
+        : `${label} status changed to ${nextStatus}.`,
     );
   };
 
@@ -275,7 +294,7 @@ function UserStatusActions({ user }: { user: User }) {
               style={{ top: menuPos.top, left: menuPos.left }}
               className="fixed z-[9999] w-44 overflow-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-xl dark:border-gray-700 dark:bg-gray-900"
             >
-              {status !== "approved" && (
+              {(status === "rejected" || status === "suspended") && (
                 <button
                   type="button"
                   onClick={() => updateStatus("approved")}
@@ -283,17 +302,6 @@ function UserStatusActions({ user }: { user: User }) {
                 >
                   <CheckCircle className="h-4 w-4 shrink-0" />
                   Approved
-                </button>
-              )}
-
-              {status !== "pending" && (
-                <button
-                  type="button"
-                  onClick={() => updateStatus("pending")}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-yellow-700 transition hover:bg-yellow-50 dark:hover:bg-yellow-950/40"
-                >
-                  <ShieldOff className="h-4 w-4 shrink-0" />
-                  Pending
                 </button>
               )}
 
@@ -322,7 +330,194 @@ function UserStatusActions({ user }: { user: User }) {
           </>,
           document.body,
         )}
+
+      {showReject && (
+        <RejectDialog user={user} onClose={() => setShowReject(false)} />
+      )}
+      {showSuspend && (
+        <SuspendDialog user={user} onClose={() => setShowSuspend(false)} />
+      )}
     </>
+  );
+}
+
+// ─── Shared modal wrapper ─────────────────────────────────────────────────────
+
+function Modal({
+  open,
+  onClose,
+  children,
+}: {
+  open: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  if (!open) return null;
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[900000] flex items-center justify-center bg-black/50 px-4 backdrop-blur-[1px]"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl dark:bg-gray-900"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {children}
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+// ─── Reject dialog ────────────────────────────────────────────────────────────
+
+function RejectDialog({ user, onClose }: { user: User; onClose: () => void }) {
+  const [updateUserStatus, { isLoading }] = useUpdateUserStatusMutation();
+  const [message, setMessage] = useState("");
+
+  const handleReject = async () => {
+    const result = await updateUserStatus({
+      id: user.id,
+      status: "rejected",
+      rejectionMessage: message.trim(),
+    });
+    const error = getErrorInApiResult(result);
+    if (error) {
+      toast.error(`Failed to reject: ${error}`);
+      return;
+    }
+    toast.success(
+      `"${user.name || user.email}" has been rejected and notified by email.`,
+    );
+    onClose();
+  };
+
+  return (
+    <Modal open onClose={onClose}>
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+          <XCircle className="w-5 h-5 text-red-600" />
+        </div>
+        <div>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-white">
+            Reject Admin Account
+          </h2>
+          <p className="text-xs text-gray-500 mt-0.5">
+            {user.name} · {user.email}
+          </p>
+        </div>
+      </div>
+
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+        Reason / Message{" "}
+        <span className="text-gray-400 font-normal">
+          (optional — sent in the email)
+        </span>
+      </label>
+      <textarea
+        rows={4}
+        maxLength={1000}
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        placeholder="e.g. Your account details could not be verified. Please contact support."
+        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800
+                   text-sm text-gray-900 dark:text-gray-100 p-3 resize-none
+                   focus:outline-none focus:ring-2 focus:ring-red-400 transition"
+      />
+      <p className="text-xs text-gray-400 text-right mt-1">
+        {message.length}/1000
+      </p>
+
+      <div className="flex justify-end gap-3 mt-5">
+        <button
+          onClick={onClose}
+          disabled={isLoading}
+          className="px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600
+                     text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800
+                     disabled:opacity-50 transition"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleReject}
+          disabled={isLoading}
+          className="px-4 py-2 text-sm rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold
+                     disabled:opacity-50 transition flex items-center gap-2"
+        >
+          {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+          Reject
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+// ─── Suspend dialog ───────────────────────────────────────────────────────────
+
+function SuspendDialog({ user, onClose }: { user: User; onClose: () => void }) {
+  const [updateUserStatus, { isLoading }] = useUpdateUserStatusMutation();
+
+  const handleSuspend = async () => {
+    const result = await updateUserStatus({
+      id: user.id,
+      status: "suspended",
+    });
+    const error = getErrorInApiResult(result);
+    if (error) {
+      toast.error(`Failed to suspend: ${error}`);
+      return;
+    }
+    toast.success(
+      `"${user.name || user.email}" has been suspended and notified by email.`,
+    );
+    onClose();
+  };
+
+  return (
+    <Modal open onClose={onClose}>
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+          <ShieldOff className="w-5 h-5 text-gray-600" />
+        </div>
+        <div>
+          <h2 className="text-base font-semibold text-gray-900 dark:text-white">
+            Suspend Admin Account
+          </h2>
+          <p className="text-xs text-gray-500 mt-0.5">
+            {user.name} · {user.email}
+          </p>
+        </div>
+      </div>
+
+      <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+        This will suspend <strong>{user.name || user.email}</strong> and send
+        them an email notification. They will not be able to log in until the
+        account is reinstated.
+      </p>
+
+      <div className="flex justify-end gap-3">
+        <button
+          onClick={onClose}
+          disabled={isLoading}
+          className="px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600
+                     text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800
+                     disabled:opacity-50 transition"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleSuspend}
+          disabled={isLoading}
+          className="px-4 py-2 text-sm rounded-lg bg-gray-700 hover:bg-gray-800 text-white font-semibold
+                     disabled:opacity-50 transition flex items-center gap-2"
+        >
+          {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+          Suspend
+        </button>
+      </div>
+    </Modal>
   );
 }
 
@@ -362,6 +557,14 @@ export default function UsersTable() {
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
+  };
+
+  const hasFilters = Boolean(searchTerm || roleFilter !== "all");
+
+  const resetFilters = () => {
+    setSearchTerm("");
+    setRoleFilter("all");
+    setPage(TABLE_CONFIG.DEFAULT_PAGE);
   };
 
   const getSafeValue = (value: string | undefined | null, fallback = "N/A") => {
@@ -449,47 +652,47 @@ export default function UsersTable() {
       },
     },
     {
-      key: "status",
-      header: "Status / Actions",
-      className: "w-[190px] min-w-[190px] max-w-[190px] overflow-visible",
-      render: (row: User) => <UserStatusActions user={row} />,
+      key: "referralCode",
+      header: "Referral Code",
+      className: "min-w-[160px] max-w-[200px] overflow-hidden cursor-default",
+      render: (row: User) => {
+        if (!row.referralCode) {
+          return <span className="text-gray-400 italic text-sm">No code</span>;
+        }
+        return (
+          <div className="flex items-center gap-1.5">
+            <span className="font-mono text-sm text-gray-800 dark:text-gray-100 tracking-wider">
+              {row.referralCode}
+            </span>
+            <button
+              type="button"
+              title="Copy referral code"
+              onClick={() => {
+                navigator.clipboard.writeText(row.referralCode!).then(() => {
+                  toast.success("Referral code copied!");
+                });
+              }}
+              className="p-1 rounded text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              <Copy className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        );
+      },
     },
     {
-      key: "createdAt",
-      header: "Created At",
+      key: "status",
+      header: "Status / Actions",
       className:
-        "min-w-[140px] max-w-[140px] truncate overflow-hidden cursor-default",
-      bodyClassName: "text-[0.75rem] font-mono",
-      render: (row: User) => {
-        try {
-          const date = new Date(row.createdAt || "");
-          if (isNaN(date.getTime())) {
-            return <span className="text-gray-400 italic">Invalid date</span>;
-          }
-
-          return (
-            <span title={date.toISOString()}>
-              {date.toLocaleString("en-US", {
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: true,
-              })}
-            </span>
-          );
-        } catch {
-          return <span className="text-gray-400 italic">Invalid date</span>;
-        }
-      },
+        "min-w-[190px] max-w-[190px] px-2 sticky right-[440px] z-20 bg-white dark:bg-gray-900",
+      render: (row: User) => <UserStatusActions user={row} />,
     },
 
     {
       key: "view",
       header: <div className="flex justify-center w-full">View</div>,
       className:
-        "min-w-[80px] max-w-[80px] sticky right-[280px] z-20 bg-white dark:bg-gray-900",
+        "min-w-[80px] max-w-[80px] sticky right-[360px] z-20 bg-white dark:bg-gray-900",
       render: (row: User) => (
         <div className="w-full flex justify-center ">
           <UserDetails
@@ -509,6 +712,7 @@ export default function UsersTable() {
             region={row.region}
             gender={row.gender}
             avatar={row.avatar}
+            referralCode={row.referralCode}
           />
         </div>
       ),
@@ -517,7 +721,7 @@ export default function UsersTable() {
       key: "edit",
       header: <div className="flex justify-center w-full">Edit</div>,
       className:
-        "min-w-[80px] max-w-[80px] sticky right-[200px] z-20 bg-white dark:bg-gray-900",
+        "min-w-[80px] max-w-[80px] sticky right-[280px] z-20 bg-white dark:bg-gray-900",
       render: (row: User) => {
         const isTutor = row.role === "tutor";
 
@@ -563,18 +767,83 @@ export default function UsersTable() {
         </span>
       ),
       className:
-        "min-w-[120px] max-w-[120px] sticky right-[80px] z-20 bg-white dark:bg-gray-900",
-      render: (row: User) => (
-        <div className="w-full flex justify-center">
-          <ResetPassword userId={row.id} />
-        </div>
+        "min-w-[120px] max-w-[120px] sticky right-[160px] z-20 bg-white dark:bg-gray-900",
+      render: (row: User) => {
+        const isApproved = row.status?.toLowerCase() === "approved";
+        return (
+          <div className="flex justify-center items-center w-full">
+            <div
+              className={!isApproved ? "cursor-not-allowed opacity-50" : ""}
+              title={
+                !isApproved
+                  ? "Password reset is only available for approved admins"
+                  : ""
+              }
+            >
+              <ResetPassword userId={row.id} disabled={!isApproved} />
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      key: "sendReferralCode",
+      header: (
+        <span
+          className="block w-full text-center leading-tight"
+          title="Send Referral Code"
+        >
+          Send Code
+        </span>
       ),
+      className:
+        "min-w-[80px] max-w-[80px] sticky right-[80px] z-20 bg-white dark:bg-gray-900",
+      render: (row: User) => {
+        const isTutor = row.role === "tutor";
+        const isAdmin = row.role === "admin";
+        const isApproved = row.status?.toLowerCase() === "approved";
+        const tutorId = row.tutorId ?? row.tutor?.id ?? row.tutor?._id;
+
+        if (!isTutor && !isAdmin) {
+          return (
+            <div className="flex justify-center items-center w-full">
+              <Mail
+                title="Referral codes are only available for tutors and admins"
+                className="text-gray-300 dark:text-gray-600"
+              />
+            </div>
+          );
+        }
+
+        const disabled = isTutor ? !isApproved || !tutorId : !isApproved;
+
+        return (
+          <div className="flex justify-center items-center w-full">
+            <div
+              className={disabled ? "cursor-not-allowed opacity-50" : ""}
+              title={
+                !isApproved
+                  ? "Send code is only available for approved accounts"
+                  : ""
+              }
+            >
+              <SendReferralCode
+                id={isTutor ? tutorId || "" : row.id}
+                recipientType={isTutor ? "tutor" : "admin"}
+                disabled={disabled}
+                sent={!!row.referralCode}
+              />
+            </div>
+          </div>
+        );
+      },
     },
     {
       key: "delete",
       header: <div className="text-center w-full">Delete</div>,
+      align: "center",
       className:
-        "min-w-[80px] max-w-[80px] flex justify-center sticky right-0 z-20 bg-white dark:bg-gray-900",
+        "min-w-[80px] max-w-[80px] sticky right-0 z-20 bg-white dark:bg-gray-900",
       render: (row: User) => {
         const isTutor = row.role === "tutor";
 
@@ -618,7 +887,7 @@ export default function UsersTable() {
           </div>
 
           <div className="flex w-full flex-col gap-3 lg:w-auto lg:min-w-[32rem]">
-            <div className="grid w-full gap-3 sm:grid-cols-2">
+            <div className="grid w-full gap-3 sm:grid-cols-[1fr_1fr_auto]">
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
 
@@ -659,6 +928,16 @@ export default function UsersTable() {
                   </SelectContent>
                 </Select>
               </div>
+
+              <button
+                type="button"
+                onClick={resetFilters}
+                disabled={!hasFilters}
+                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:pointer-events-none disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/5 sm:w-auto"
+              >
+                <X className="h-4 w-4" />
+                Clear filters
+              </button>
             </div>
           </div>
         </div>

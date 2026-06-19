@@ -134,7 +134,9 @@ export function UpdateGrade({
 
           <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin px-6 py-4 grid gap-4">
             <div className="grid gap-3">
-              <Label htmlFor="title">Title</Label>
+              <Label htmlFor="title">
+                Title <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="title"
                 placeholder="Title"
@@ -149,7 +151,9 @@ export function UpdateGrade({
             </div>
 
             <div className="grid gap-3">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">
+                Description <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="description"
                 placeholder="Description"
@@ -166,7 +170,9 @@ export function UpdateGrade({
             </div>
 
             <div className="grid gap-3">
-              <Label htmlFor="subjects">Subjects</Label>
+              <Label htmlFor="subjects">
+                Subjects <span className="text-red-500">*</span>
+              </Label>
               <Controller
                 control={control}
                 name="subjects"

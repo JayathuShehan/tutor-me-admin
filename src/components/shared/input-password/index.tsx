@@ -1,4 +1,5 @@
 import { getNestedError } from "@/utils/form";
+import { renderRequiredLabel } from "@/components/form/required-label";
 import React, { InputHTMLAttributes, useState } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 import Icon from "../icon";
@@ -25,7 +26,7 @@ const InputPassword: React.FC<InputPasswordProps> = ({
     <div className="flex flex-col gap-1">
       {label && (
         <label className="text-sm font-medium text-gray-700 dark:text-white/90">
-          {label}
+          {renderRequiredLabel(label)}
         </label>
       )}
 

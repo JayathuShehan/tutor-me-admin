@@ -8,6 +8,8 @@ import {
   UserCog,
   TextSearch,
   User,
+  Gift,
+  Coins,
 } from "lucide-react";
 
 const NavItems = [
@@ -68,7 +70,18 @@ const NavItems = [
     subItems: [
       { name: "Tutors", path: "/tutors", pro: false },
       { name: "Users", path: "/users/all-users", pro: false },
+      { name: "Referees", path: "/referees", pro: false },
     ],
+  },
+  {
+    icon: <Gift />,
+    name: "Referrals",
+    path: "/referrals",
+  },
+  {
+    icon: <Coins />,
+    name: "Bonus Transactions",
+    path: "/bonus-transactions",
   },
   {
     name: "Admin Management",

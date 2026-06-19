@@ -22,7 +22,9 @@ const API_BASE = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL;
 
 if (!API_BASE) {
   console.error("Error: API_URL environment variable is not set.");
-  console.error('Usage: API_URL="https://..." node scripts/dedup-tuition-rates.mjs <email> <password> [--apply]');
+  console.error(
+    'Usage: API_URL="https://..." node scripts/dedup-tuition-rates.mjs <email> <password> [--apply]',
+  );
   process.exit(1);
 }
 
@@ -31,8 +33,16 @@ const DRY_RUN = !process.argv.includes("--apply");
 // ─── helpers ────────────────────────────────────────────────────────────────
 
 function prompt(question) {
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  return new Promise((resolve) => rl.question(question, (ans) => { rl.close(); resolve(ans.trim()); }));
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  return new Promise((resolve) =>
+    rl.question(question, (ans) => {
+      rl.close();
+      resolve(ans.trim());
+    }),
+  );
 }
 
 async function apiFetch(path, token, options = {}) {
@@ -46,7 +56,10 @@ async function apiFetch(path, token, options = {}) {
   });
   const text = await res.text();
   const data = text ? JSON.parse(text) : {};
-  if (!res.ok) throw new Error(`${options.method ?? "GET"} ${path} failed: ${JSON.stringify(data)}`);
+  if (!res.ok)
+    throw new Error(
+      `${options.method ?? "GET"} ${path} failed: ${JSON.stringify(data)}`,
+    );
   return data;
 }
 
@@ -71,7 +84,7 @@ async function deleteRate(token, rateId) {
 
 async function main() {
   let [, , email, password] = process.argv;
-  if (!email)    email    = await prompt("Email: ");
+  if (!email) email = await prompt("Email: ");
   if (!password) password = await prompt("Password: ");
 
   console.log("\nLogging in…");
@@ -90,7 +103,7 @@ async function main() {
   const groups = new Map();
 
   for (const rate of rates) {
-    const gradeId   = rate.grade?.id   ?? rate.grade;
+    const gradeId = rate.grade?.id ?? rate.grade;
     const subjectId = rate.subject?.id ?? rate.subject;
     if (!gradeId || !subjectId) continue;
 
@@ -120,19 +133,23 @@ async function main() {
       return db - da;
     });
 
-    const keep    = group[0];
+    const keep = group[0];
     const toDelete = group.slice(1);
-    const gradeTitle   = keep.grade?.title   ?? keep.grade;
+    const gradeTitle = keep.grade?.title ?? keep.grade;
     const subjectTitle = keep.subject?.title ?? keep.subject;
 
     console.log(`  Grade:   "${gradeTitle}"`);
     console.log(`  Subject: "${subjectTitle}"`);
-    console.log(`  Keep:    ${keep.id} (updated ${keep.updatedAt ?? keep.createdAt})`);
+    console.log(
+      `  Keep:    ${keep.id} (updated ${keep.updatedAt ?? keep.createdAt})`,
+    );
 
     for (const dup of toDelete) {
       totalToDelete++;
       if (DRY_RUN) {
-        console.log(`  [DRY] Would delete: ${dup.id} (updated ${dup.updatedAt ?? dup.createdAt})`);
+        console.log(
+          `  [DRY] Would delete: ${dup.id} (updated ${dup.updatedAt ?? dup.createdAt})`,
+        );
       } else {
         await deleteRate(token, dup.id);
         console.log(`  [DEL] Deleted:      ${dup.id}`);
@@ -146,11 +163,17 @@ async function main() {
   console.log("═".repeat(64));
 
   if (DRY_RUN) {
-    console.log(`${totalToDelete} duplicate rate document(s) would be deleted across ${duplicateGroups.length} group(s).`);
+    console.log(
+      `${totalToDelete} duplicate rate document(s) would be deleted across ${duplicateGroups.length} group(s).`,
+    );
     console.log("\nRun with --apply to apply:\n");
-    console.log("  node scripts/dedup-tuition-rates.mjs <email> <password> --apply\n");
+    console.log(
+      "  node scripts/dedup-tuition-rates.mjs <email> <password> --apply\n",
+    );
   } else {
-    console.log(`Deleted ${totalToDelete} duplicate rate document(s) across ${duplicateGroups.length} group(s).`);
+    console.log(
+      `Deleted ${totalToDelete} duplicate rate document(s) across ${duplicateGroups.length} group(s).`,
+    );
     console.log("\nDone.");
   }
 }

@@ -103,7 +103,9 @@ export function AddFAQ() {
           </DialogHeader>
           <div className="grid gap-4">
             <div className="grid gap-3">
-              <Label htmlFor="category">Category</Label>
+              <Label htmlFor="category">
+                Category <span className="text-red-500">*</span>
+              </Label>
               <Controller
                 name="category"
                 control={control}
@@ -129,7 +131,9 @@ export function AddFAQ() {
               )}
             </div>
             <div className="grid gap-3">
-              <Label htmlFor="question">Question</Label>
+              <Label htmlFor="question">
+                Question <span className="text-red-500">*</span>
+              </Label>
               <Input
                 className="dark:bg-gray-900 dark:placeholder:text-white/30"
                 id="question"
@@ -151,7 +155,9 @@ export function AddFAQ() {
               )}
             </div>
             <div className="grid gap-3">
-              <Label htmlFor="answer">Answer</Label>
+              <Label htmlFor="answer">
+                Answer <span className="text-red-500">*</span>
+              </Label>
               <TextArea
                 id="answer"
                 placeholder="Enter FAQ answer"

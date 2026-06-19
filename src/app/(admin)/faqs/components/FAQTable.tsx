@@ -169,7 +169,7 @@ export default function FAQTable() {
       render: (row: FAQ) => (
         <span
           title={`Category: ${getFaqCategoryLabel(row.category)}`}
-          className="inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 dark:bg-blue-500/10 dark:text-blue-300"
+          className="inline-flex min-w-[6.5rem] justify-center rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 dark:bg-blue-500/10 dark:text-blue-300"
         >
           {getFaqCategoryLabel(row.category)}
         </span>

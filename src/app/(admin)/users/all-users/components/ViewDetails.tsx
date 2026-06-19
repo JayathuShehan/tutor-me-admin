@@ -26,6 +26,7 @@ interface SubjectDetailsProps {
   status: "pending" | "approved" | "rejected" | "suspended";
   gender?: "male" | "female";
   avatar?: string;
+  referralCode?: string;
 }
 
 function CopyableDisplayField({
@@ -85,6 +86,7 @@ export function UserDetails({
   status,
   gender,
   avatar,
+  referralCode,
 }: SubjectDetailsProps) {
   const [open, setOpen] = useState(false);
 
@@ -224,6 +226,18 @@ export function UserDetails({
                     : "-",
                 )}
               </div>
+            </div>
+            <div className="grid gap-3">
+              <Label>Referral Code</Label>
+              <CopyableDisplayField
+                label="Referral Code"
+                value={referralCode}
+                className={cn(
+                  displayFieldClass,
+                  "min-h-[2.5rem]",
+                  "overflow-auto font-mono tracking-wider",
+                )}
+              />
             </div>
           </div>
         </div>

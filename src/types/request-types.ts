@@ -192,6 +192,12 @@ export type UpdateUserRequest = {
   avatar?: string;
 };
 
+export type UpdateUserStatusRequest = {
+  id: string;
+  status: "pending" | "approved" | "rejected" | "suspended";
+  rejectionMessage?: string;
+};
+
 export type UpdateGradeRequest = {
   id: string;
   title: string;

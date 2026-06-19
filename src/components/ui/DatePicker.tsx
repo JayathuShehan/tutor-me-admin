@@ -275,10 +275,8 @@ const DatePicker: React.FC<DatePickerProps> = ({
     <div className={cn("space-y-2", className)}>
       {label && (
         <Label htmlFor={id}>
-          {label}{" "}
-          {required && (
-            <span className="text-gray-900 dark:text-white/90">*</span>
-          )}
+          {label}
+          {required && <span>*</span>}
         </Label>
       )}
 

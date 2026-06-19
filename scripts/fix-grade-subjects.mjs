@@ -25,7 +25,9 @@ const API_BASE = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL;
 
 if (!API_BASE) {
   console.error("Error: API_URL environment variable is not set.");
-  console.error('Usage: API_URL="https://..." node scripts/fix-grade-subjects.mjs <email> <password> [--apply]');
+  console.error(
+    'Usage: API_URL="https://..." node scripts/fix-grade-subjects.mjs <email> <password> [--apply]',
+  );
   process.exit(1);
 }
 
@@ -34,8 +36,16 @@ const DRY_RUN = !process.argv.includes("--apply");
 // ─── helpers ────────────────────────────────────────────────────────────────
 
 function prompt(question) {
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  return new Promise((resolve) => rl.question(question, (ans) => { rl.close(); resolve(ans.trim()); }));
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  return new Promise((resolve) =>
+    rl.question(question, (ans) => {
+      rl.close();
+      resolve(ans.trim());
+    }),
+  );
 }
 
 async function apiFetch(path, token, options = {}) {
@@ -48,7 +58,10 @@ async function apiFetch(path, token, options = {}) {
     },
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(`${options.method ?? "GET"} ${path} failed: ${JSON.stringify(data)}`);
+  if (!res.ok)
+    throw new Error(
+      `${options.method ?? "GET"} ${path} failed: ${JSON.stringify(data)}`,
+    );
   return data;
 }
 
@@ -106,7 +119,7 @@ function deduplicateAndSort(subjects) {
 
 async function main() {
   let [, , email, password] = process.argv;
-  if (!email)    email    = await prompt("Email: ");
+  if (!email) email = await prompt("Email: ");
   if (!password) password = await prompt("Password: ");
 
   console.log("\nLogging in…");
@@ -114,7 +127,9 @@ async function main() {
   console.log("Logged in\n");
 
   if (DRY_RUN) {
-    console.log("DRY RUN — no writes will be made. Pass --apply to apply fixes.\n");
+    console.log(
+      "DRY RUN — no writes will be made. Pass --apply to apply fixes.\n",
+    );
   }
 
   // ── fetch grades ──────────────────────────────────────────────────────────
@@ -146,22 +161,25 @@ async function main() {
   console.log("─".repeat(64));
 
   for (const grade of grades) {
-    const gradeId    = grade.id ?? grade._id;
+    const gradeId = grade.id ?? grade._id;
     const gradeTitle = grade.title ?? gradeId;
-    const subjects   = grade.subjects ?? [];
+    const subjects = grade.subjects ?? [];
 
     const original = subjects.map(normaliseSubjectId).filter(Boolean);
-    const fixed    = deduplicateAndSort(subjects);
+    const fixed = deduplicateAndSort(subjects);
     const fixedIds = fixed.map(normaliseSubjectId).filter(Boolean);
 
     const duplicatesRemoved = original.length - fixedIds.length;
-    const orderChanged      = fixedIds.some((id, i) => id !== original[i]) && duplicatesRemoved === 0;
-    const needsFix          = duplicatesRemoved > 0 || orderChanged;
+    const orderChanged =
+      fixedIds.some((id, i) => id !== original[i]) && duplicatesRemoved === 0;
+    const needsFix = duplicatesRemoved > 0 || orderChanged;
 
     // ── cross-check: any rate's subject missing from this grade? ────────────
     const rateSubjects = rateSubjectsByGrade.get(gradeId) ?? new Set();
-    const fixedIdSet   = new Set(fixedIds);
-    const missingFromGrade = [...rateSubjects].filter((sid) => !fixedIdSet.has(sid));
+    const fixedIdSet = new Set(fixedIds);
+    const missingFromGrade = [...rateSubjects].filter(
+      (sid) => !fixedIdSet.has(sid),
+    );
 
     if (missingFromGrade.length > 0) {
       orphanWarnings.push({ gradeTitle, gradeId, missingFromGrade });
@@ -169,16 +187,21 @@ async function main() {
 
     // ── log ─────────────────────────────────────────────────────────────────
     if (!needsFix && missingFromGrade.length === 0) {
-      console.log(`  [ OK ] "${gradeTitle}" — ${fixedIds.length} subject(s), clean`);
+      console.log(
+        `  [ OK ] "${gradeTitle}" — ${fixedIds.length} subject(s), clean`,
+      );
       continue;
     }
 
     const parts = [];
-    if (duplicatesRemoved > 0) parts.push(`${duplicatesRemoved} duplicate(s) removed`);
-    if (orderChanged)           parts.push(`order corrected`);
+    if (duplicatesRemoved > 0)
+      parts.push(`${duplicatesRemoved} duplicate(s) removed`);
+    if (orderChanged) parts.push(`order corrected`);
 
     if (DRY_RUN) {
-      console.log(`  [DRY] "${gradeTitle}" — ${parts.join(", ")} (${original.length} → ${fixedIds.length})`);
+      console.log(
+        `  [DRY] "${gradeTitle}" — ${parts.join(", ")} (${original.length} → ${fixedIds.length})`,
+      );
       if (fixedIds.length <= 30) {
         for (const s of fixed) {
           const title = typeof s === "object" ? s.title : s;
@@ -187,7 +210,9 @@ async function main() {
       }
     } else if (needsFix) {
       await patchGrade(token, gradeId, fixedIds);
-      console.log(`  [FIX] "${gradeTitle}" — ${parts.join(", ")} (${original.length} → ${fixedIds.length})`);
+      console.log(
+        `  [FIX] "${gradeTitle}" — ${parts.join(", ")} (${original.length} → ${fixedIds.length})`,
+      );
       if (fixedIds.length <= 30) {
         for (const s of fixed) {
           const title = typeof s === "object" ? s.title : s;
@@ -204,14 +229,20 @@ async function main() {
   // ── orphan warnings ───────────────────────────────────────────────────────
   if (orphanWarnings.length > 0) {
     console.log("\n" + "─".repeat(64));
-    console.log("⚠  RATE/SUBJECT MISMATCH — tuition rates reference subjects not in grade:");
+    console.log(
+      "⚠  RATE/SUBJECT MISMATCH — tuition rates reference subjects not in grade:",
+    );
     for (const { gradeTitle, missingFromGrade } of orphanWarnings) {
       console.log(`\n   Grade: "${gradeTitle}"`);
       for (const sid of missingFromGrade) {
-        console.log(`     - Subject ID ${sid} has a rate but is NOT in grade.subjects`);
+        console.log(
+          `     - Subject ID ${sid} has a rate but is NOT in grade.subjects`,
+        );
       }
     }
-    console.log("\n   These subjects should be added back to the grade manually via the admin panel.");
+    console.log(
+      "\n   These subjects should be added back to the grade manually via the admin panel.",
+    );
   }
 
   // ── summary ───────────────────────────────────────────────────────────────
@@ -221,14 +252,26 @@ async function main() {
     console.log("All grades are clean — no changes needed.");
   } else if (DRY_RUN) {
     console.log(`${gradesToFix} grade(s) need fixing:`);
-    if (totalDuplicatesRemoved > 0) console.log(`  • ${totalDuplicatesRemoved} duplicate subject reference(s) would be removed`);
-    if (totalReordered > 0)         console.log(`  • ${totalReordered} grade(s) would be reordered alphabetically`);
+    if (totalDuplicatesRemoved > 0)
+      console.log(
+        `  • ${totalDuplicatesRemoved} duplicate subject reference(s) would be removed`,
+      );
+    if (totalReordered > 0)
+      console.log(
+        `  • ${totalReordered} grade(s) would be reordered alphabetically`,
+      );
     console.log("\nRun with --apply to apply:\n");
-    console.log("  node scripts/fix-grade-subjects.mjs <email> <password> --apply\n");
+    console.log(
+      "  node scripts/fix-grade-subjects.mjs <email> <password> --apply\n",
+    );
   } else {
     console.log(`Fixed ${gradesToFix} grade(s):`);
-    if (totalDuplicatesRemoved > 0) console.log(`  • ${totalDuplicatesRemoved} duplicate subject reference(s) removed`);
-    if (totalReordered > 0)         console.log(`  • ${totalReordered} grade(s) reordered alphabetically`);
+    if (totalDuplicatesRemoved > 0)
+      console.log(
+        `  • ${totalDuplicatesRemoved} duplicate subject reference(s) removed`,
+      );
+    if (totalReordered > 0)
+      console.log(`  • ${totalReordered} grade(s) reordered alphabetically`);
     console.log("\nDone.");
   }
 }

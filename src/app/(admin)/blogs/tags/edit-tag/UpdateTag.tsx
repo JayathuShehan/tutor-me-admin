@@ -125,7 +125,9 @@ export function UpdateTag({ id, name, description }: UpdateTagProps) {
           </DialogHeader>
           <div className="grid gap-4">
             <div className="grid gap-3">
-              <Label htmlFor="name">Title</Label>
+              <Label htmlFor="name">
+                Title <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="name"
                 placeholder="Title"
@@ -139,7 +141,9 @@ export function UpdateTag({ id, name, description }: UpdateTagProps) {
               )}
             </div>
             <div className="grid gap-3">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">
+                Description <span className="text-red-500">*</span>
+              </Label>
               <Textarea
                 id="description"
                 placeholder="Description"

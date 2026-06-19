@@ -12,55 +12,59 @@ import readline from "readline";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const API_BASE = "https://tutorme-backend-api-d7a6cjdkgnedbxf0.southeastasia-01.azurewebsites.net";
+const API_BASE =
+  "https://tutorme-backend-api-d7a6cjdkgnedbxf0.southeastasia-01.azurewebsites.net";
 const PAPERS_DIR = process.env.PAPERS_DIR ?? "D:/Download/Cambridge-OL-Papers";
 
 // Cambridge O Level subjects from https://www.cambridgeinternational.org/.../cambridge-o-level/subjects/
 const CAMBRIDGE_OL_SUBJECTS = [
-  { title: "Accounting",                   code: "7707" },
-  { title: "Agriculture",                  code: "5038" },
-  { title: "Arabic",                       code: "3180" },
-  { title: "Art & Design",                 code: "6090" },
-  { title: "Bangladesh Studies",           code: "7094" },
-  { title: "Bengali",                      code: "3204" },
-  { title: "Biblical Studies",             code: "2035" },
-  { title: "Biology",                      code: "5090" },
-  { title: "Business",                     code: "7081" },
-  { title: "Business Studies",             code: "7115" },
-  { title: "Chemistry",                    code: "5070" },
-  { title: "Commerce",                     code: "7100" },
-  { title: "Computer Science",             code: "2210" },
-  { title: "Economics",                    code: "2281" },
-  { title: "English Language",             code: "1123" },
-  { title: "Environmental Management",     code: "5014" },
-  { title: "Fashion & Textiles",           code: "6130" },
-  { title: "Food & Nutrition",             code: "6065" },
-  { title: "Geography",                    code: "2217" },
-  { title: "Global Perspectives",          code: "2069" },
-  { title: "Hinduism",                     code: "2055" },
-  { title: "History",                      code: "2147" },
-  { title: "ICT",                          code: "0417" },
-  { title: "Islamic Studies",              code: "2068" },
-  { title: "Islamiyat",                    code: "2058" },
-  { title: "Literature in English",        code: "2010" },
-  { title: "Mathematics - Additional",     code: "4037" },
-  { title: "Mathematics (Syllabus D)",     code: "4024" },
-  { title: "Pakistan Studies",             code: "2059" },
-  { title: "Physics",                      code: "5054" },
-  { title: "Science - Combined",           code: "5129" },
-  { title: "Setswana",                     code: "3158" },
-  { title: "Sinhala",                      code: "3205" },
-  { title: "Sociology",                    code: "2251" },
-  { title: "Statistics",                   code: "4040" },
-  { title: "Tamil",                        code: "3226" },
-  { title: "Travel & Tourism",             code: "7096" },
-  { title: "Urdu - First Language",        code: "3247" },
-  { title: "Urdu - Second Language",       code: "3248" },
+  { title: "Accounting", code: "7707" },
+  { title: "Agriculture", code: "5038" },
+  { title: "Arabic", code: "3180" },
+  { title: "Art & Design", code: "6090" },
+  { title: "Bangladesh Studies", code: "7094" },
+  { title: "Bengali", code: "3204" },
+  { title: "Biblical Studies", code: "2035" },
+  { title: "Biology", code: "5090" },
+  { title: "Business", code: "7081" },
+  { title: "Business Studies", code: "7115" },
+  { title: "Chemistry", code: "5070" },
+  { title: "Commerce", code: "7100" },
+  { title: "Computer Science", code: "2210" },
+  { title: "Economics", code: "2281" },
+  { title: "English Language", code: "1123" },
+  { title: "Environmental Management", code: "5014" },
+  { title: "Fashion & Textiles", code: "6130" },
+  { title: "Food & Nutrition", code: "6065" },
+  { title: "Geography", code: "2217" },
+  { title: "Global Perspectives", code: "2069" },
+  { title: "Hinduism", code: "2055" },
+  { title: "History", code: "2147" },
+  { title: "ICT", code: "0417" },
+  { title: "Islamic Studies", code: "2068" },
+  { title: "Islamiyat", code: "2058" },
+  { title: "Literature in English", code: "2010" },
+  { title: "Mathematics - Additional", code: "4037" },
+  { title: "Mathematics (Syllabus D)", code: "4024" },
+  { title: "Pakistan Studies", code: "2059" },
+  { title: "Physics", code: "5054" },
+  { title: "Science - Combined", code: "5129" },
+  { title: "Setswana", code: "3158" },
+  { title: "Sinhala", code: "3205" },
+  { title: "Sociology", code: "2251" },
+  { title: "Statistics", code: "4040" },
+  { title: "Tamil", code: "3226" },
+  { title: "Travel & Tourism", code: "7096" },
+  { title: "Urdu - First Language", code: "3247" },
+  { title: "Urdu - Second Language", code: "3248" },
 ];
 
 const TARGET_GRADE_TITLE = "Cambridge Ordinary Level";
 const SUBJECT_CODE_BY_TITLE = new Map(
-  CAMBRIDGE_OL_SUBJECTS.map((subject) => [normalise(subject.title), subject.code]),
+  CAMBRIDGE_OL_SUBJECTS.map((subject) => [
+    normalise(subject.title),
+    subject.code,
+  ]),
 );
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -91,8 +95,16 @@ function getDownloadedSubjects() {
 }
 
 function prompt(question) {
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  return new Promise((resolve) => rl.question(question, (ans) => { rl.close(); resolve(ans); }));
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  return new Promise((resolve) =>
+    rl.question(question, (ans) => {
+      rl.close();
+      resolve(ans);
+    }),
+  );
 }
 
 async function login(email, password) {
@@ -117,11 +129,15 @@ async function fetchAllSubjects(token) {
 async function createSubject(token, title, description) {
   const res = await fetch(`${API_BASE}/v1/subjects`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
     body: JSON.stringify({ title, description }),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(`Create subject failed: ${JSON.stringify(data)}`);
+  if (!res.ok)
+    throw new Error(`Create subject failed: ${JSON.stringify(data)}`);
   return data;
 }
 
@@ -136,7 +152,10 @@ async function fetchAllGrades(token) {
 async function updateGrade(token, gradeId, subjectIds) {
   const res = await fetch(`${API_BASE}/v1/grades/${gradeId}`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
     body: JSON.stringify({ subjects: subjectIds }),
   });
   const data = await res.json();
@@ -165,7 +184,9 @@ async function main() {
   // 1. Fetch existing subjects
   console.log("📋 Fetching existing subjects...");
   const existingSubjects = await fetchAllSubjects(token);
-  const existingMap = new Map(existingSubjects.map((s) => [normalise(s.title), s.id]));
+  const existingMap = new Map(
+    existingSubjects.map((s) => [normalise(s.title), s.id]),
+  );
   console.log(`   Found ${existingSubjects.length} existing subjects\n`);
 
   // 2. Create missing subjects
@@ -202,17 +223,23 @@ async function main() {
   // 3. Find the Cambridge Ordinary Level grade
   console.log("🎓 Fetching grades...");
   const grades = await fetchAllGrades(token);
-  const grade = grades.find((g) => normalise(g.title) === normalise(TARGET_GRADE_TITLE));
+  const grade = grades.find(
+    (g) => normalise(g.title) === normalise(TARGET_GRADE_TITLE),
+  );
 
   if (!grade) {
     const titles = grades.map((g) => `  • ${g.title}`).join("\n");
-    throw new Error(`Grade "${TARGET_GRADE_TITLE}" not found. Available grades:\n${titles}`);
+    throw new Error(
+      `Grade "${TARGET_GRADE_TITLE}" not found. Available grades:\n${titles}`,
+    );
   }
 
   console.log(`   Found grade: "${grade.title}" (${grade.id})`);
 
   // Include any subjects already on the grade that we aren't adding
-  const existingGradeSubjectIds = (grade.subjects ?? []).map((s) => (typeof s === "string" ? s : (s.id ?? s._id)));
+  const existingGradeSubjectIds = (grade.subjects ?? []).map((s) =>
+    typeof s === "string" ? s : (s.id ?? s._id),
+  );
   const mergedIds = [...new Set([...existingGradeSubjectIds, ...subjectIds])];
 
   console.log(`\n🔗 Updating grade with ${mergedIds.length} subject(s)...`);

@@ -109,7 +109,8 @@ export const useDashboardAnalytics = (): DashboardAnalytics => {
     approvedTutorsTotal: data?.chart.totals.approvedTutors ?? 0,
     tutorRequestsTotal: data?.chart.totals.tutorRequests ?? 0,
     tutorApplicationsTotal: data?.chart.totals.tutorApplications ?? 0,
-    pendingTutorApplicationsTotal: data?.attention.pendingTutorApplicationsTotal ?? 0,
+    pendingTutorApplicationsTotal:
+      data?.attention.pendingTutorApplicationsTotal ?? 0,
     inquiriesTotal: data?.attention.inquiriesTotal ?? 0,
   };
 };

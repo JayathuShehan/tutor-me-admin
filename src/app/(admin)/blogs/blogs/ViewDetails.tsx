@@ -77,10 +77,20 @@ function buildToc(content: BlogContentBlock[]): TocEntry[] {
     if (level === 2) {
       h2Counter++;
       h3Counter = 0;
-      toc.push({ id: block._id, text: block.text, level: 2, number: `${h2Counter}.` });
+      toc.push({
+        id: block._id,
+        text: block.text,
+        level: 2,
+        number: `${h2Counter}.`,
+      });
     } else if (level === 3) {
       h3Counter++;
-      toc.push({ id: block._id, text: block.text, level: 3, number: `${h2Counter}.${h3Counter}.` });
+      toc.push({
+        id: block._id,
+        text: block.text,
+        level: 3,
+        number: `${h2Counter}.${h3Counter}.`,
+      });
     }
   }
 
@@ -102,7 +112,9 @@ export function BlogDetails({ blog }: BlogDetailsProps) {
   const authorName =
     authorData?.name?.trim() || blog.author?.name?.trim() || "Unknown";
   const authorAvatar =
-    authorData?.avatar?.trim() || blog.author?.avatar?.trim() || "/images/user/user.png";
+    authorData?.avatar?.trim() ||
+    blog.author?.avatar?.trim() ||
+    "/images/user/user.png";
   const authorRole =
     authorData?.role?.trim() || blog.author?.role?.trim() || "admin";
 
@@ -113,12 +125,44 @@ export function BlogDetails({ blog }: BlogDetailsProps) {
       case "heading": {
         const level = block.level || 2;
         if (level === 1)
-          return <h1 id={block._id} key={block._id} className="scroll-mt-20 text-xl font-bold mt-6 mb-2 text-gray-900 dark:text-white">{block.text}</h1>;
+          return (
+            <h1
+              id={block._id}
+              key={block._id}
+              className="scroll-mt-20 text-xl font-bold mt-6 mb-2 text-gray-900 dark:text-white"
+            >
+              {block.text}
+            </h1>
+          );
         if (level === 2)
-          return <h2 id={block._id} key={block._id} className="scroll-mt-20 text-lg font-semibold mt-5 mb-2 text-gray-800 dark:text-white/90">{block.text}</h2>;
+          return (
+            <h2
+              id={block._id}
+              key={block._id}
+              className="scroll-mt-20 text-lg font-semibold mt-5 mb-2 text-gray-800 dark:text-white/90"
+            >
+              {block.text}
+            </h2>
+          );
         if (level === 3)
-          return <h3 id={block._id} key={block._id} className="scroll-mt-20 text-base font-semibold mt-4 mb-1 text-gray-700 dark:text-white/80">{block.text}</h3>;
-        return <h4 id={block._id} key={block._id} className="scroll-mt-20 text-sm font-semibold mt-3 mb-1 text-gray-700 dark:text-white/70">{block.text}</h4>;
+          return (
+            <h3
+              id={block._id}
+              key={block._id}
+              className="scroll-mt-20 text-base font-semibold mt-4 mb-1 text-gray-700 dark:text-white/80"
+            >
+              {block.text}
+            </h3>
+          );
+        return (
+          <h4
+            id={block._id}
+            key={block._id}
+            className="scroll-mt-20 text-sm font-semibold mt-3 mb-1 text-gray-700 dark:text-white/70"
+          >
+            {block.text}
+          </h4>
+        );
       }
       case "paragraph":
         return (
@@ -131,7 +175,10 @@ export function BlogDetails({ blog }: BlogDetailsProps) {
       case "list":
         if (block.style === "ordered") {
           return (
-            <ol key={block._id} className="list-decimal list-outside pl-5 mb-3 space-y-1">
+            <ol
+              key={block._id}
+              className="list-decimal list-outside pl-5 mb-3 space-y-1"
+            >
               {(block.items || []).map((item, i) => (
                 <li
                   key={i}
@@ -143,7 +190,10 @@ export function BlogDetails({ blog }: BlogDetailsProps) {
           );
         }
         return (
-          <ul key={block._id} className="list-disc list-outside pl-5 mb-3 space-y-1">
+          <ul
+            key={block._id}
+            className="list-disc list-outside pl-5 mb-3 space-y-1"
+          >
             {(block.items || []).map((item, i) => (
               <li
                 key={i}
@@ -187,7 +237,6 @@ export function BlogDetails({ blog }: BlogDetailsProps) {
         </DialogHeader>
 
         <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin px-6 py-4 space-y-5">
-
           {/* Cover image */}
           {blog.image && (
             <img
@@ -213,11 +262,17 @@ export function BlogDetails({ blog }: BlogDetailsProps) {
                   src={authorAvatar}
                   alt={authorName}
                   className="h-10 w-10 rounded-full object-cover"
-                  onError={(e) => { e.currentTarget.src = "/images/user/user.png"; }}
+                  onError={(e) => {
+                    e.currentTarget.src = "/images/user/user.png";
+                  }}
                 />
                 <div>
-                  <p className="text-sm font-semibold text-gray-800 dark:text-white/90">{authorName}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{authorRole}</p>
+                  <p className="text-sm font-semibold text-gray-800 dark:text-white/90">
+                    {authorName}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+                    {authorRole}
+                  </p>
                 </div>
               </>
             )}
@@ -253,7 +308,10 @@ export function BlogDetails({ blog }: BlogDetailsProps) {
                         onClick={() =>
                           document
                             .getElementById(entry.id)
-                            ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                            ?.scrollIntoView({
+                              behavior: "smooth",
+                              block: "start",
+                            })
                         }
                         className="text-left text-sm text-brand-500 dark:text-brand-400 transition-colors hover:text-brand-600 dark:hover:text-brand-300"
                       >

@@ -112,6 +112,8 @@ export type Users = BaseEntity & {
   zip: string;
   address: string;
   avatar?: string;
+  tutorId?: string;
+  referralCode?: string;
 };
 
 // Grade
@@ -338,6 +340,63 @@ export type Tutor = BaseEntity & {
   agreeTerms: boolean;
   agreeAssignmentInfo: boolean;
   certificatesAndQualifications: CertificateItem[];
+  referralCode?: string;
+  referredByCode?: string;
+};
+
+export type ReferralSummary = {
+  referrerTutorId: string;
+  referrerName: string;
+  referrerEmail: string;
+  referralCode: string;
+  totalReferrals: number;
+  pendingRewards: number;
+};
+
+export type ReferralReward = BaseEntity & {
+  referrerTutorId: string;
+  referredTutorId: {
+    id: string;
+    fullName: string;
+    email: string;
+    createdAt: string;
+  };
+  rewardSent: boolean;
+};
+
+export type Referee = BaseEntity & {
+  name: string;
+  email: string;
+  contactNumber: string;
+  gender: string;
+  avatar?: string;
+  referralCode: string;
+  referralCount: number;
+};
+
+export type RefereeEmailAvailabilityResponse = {
+  available: boolean;
+  message: string;
+};
+
+export type BonusTransaction = BaseEntity & {
+  referrerTutorId: string;
+  referrerName: string;
+  referrerEmail: string;
+  adminId: string;
+  adminEmail: string;
+  rewardIds: string[] | BonusRewardDetail[];
+  rewardCount: number;
+  hasSlip: boolean;
+  slip?: { fileName: string; mimeType: string; data?: string };
+  createdAt: string;
+};
+
+export type BonusRewardDetail = {
+  id: string;
+  rewardSent: boolean;
+  createdAt: string;
+  referredTutorId: { fullName: string; email: string };
 };
 
 export type TutorEmailAvailabilityResponse = {

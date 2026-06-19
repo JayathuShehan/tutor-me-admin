@@ -18,7 +18,9 @@ const ErrorFallback = ({ resetError }: FallbackProps) => {
         <p className="text-sm font-medium uppercase tracking-wide text-brand-500">
           Something went wrong
         </p>
-        <h1 className="mt-3 text-2xl font-semibold">We hit an unexpected error.</h1>
+        <h1 className="mt-3 text-2xl font-semibold">
+          We hit an unexpected error.
+        </h1>
         <p className="mt-3 text-sm leading-6 text-gray-600 dark:text-gray-300">
           The admin dashboard could not finish loading this view. Try again, or
           refresh the page if the issue keeps happening.

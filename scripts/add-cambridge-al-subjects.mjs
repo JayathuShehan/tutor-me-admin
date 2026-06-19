@@ -11,7 +11,8 @@
 import fs from "fs";
 import readline from "readline";
 
-const API_BASE = "https://tutorme-backend-api-d7a6cjdkgnedbxf0.southeastasia-01.azurewebsites.net";
+const API_BASE =
+  "https://tutorme-backend-api-d7a6cjdkgnedbxf0.southeastasia-01.azurewebsites.net";
 const PAPERS_DIR = process.env.PAPERS_DIR ?? "D:/Download/Cambridge-AL-Papers";
 const TARGET_GRADE_TITLE = "Cambridge Advanced Level";
 
@@ -53,11 +54,16 @@ function getDownloadedSubjects() {
 }
 
 function prompt(question) {
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  return new Promise((resolve) => rl.question(question, (answer) => {
-    rl.close();
-    resolve(answer);
-  }));
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  return new Promise((resolve) =>
+    rl.question(question, (answer) => {
+      rl.close();
+      resolve(answer);
+    }),
+  );
 }
 
 async function login(email, password) {
@@ -82,11 +88,15 @@ async function fetchAllSubjects(token) {
 async function createSubject(token, title, description) {
   const res = await fetch(`${API_BASE}/v1/subjects`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
     body: JSON.stringify({ title, description }),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(`Create subject failed: ${JSON.stringify(data)}`);
+  if (!res.ok)
+    throw new Error(`Create subject failed: ${JSON.stringify(data)}`);
   return data;
 }
 
@@ -101,7 +111,10 @@ async function fetchAllGrades(token) {
 async function updateGrade(token, gradeId, subjectIds) {
   const res = await fetch(`${API_BASE}/v1/grades/${gradeId}`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
     body: JSON.stringify({ subjects: subjectIds }),
   });
   const data = await res.json();
@@ -127,7 +140,9 @@ async function main() {
 
   console.log("Fetching existing subjects...");
   const existingSubjects = await fetchAllSubjects(token);
-  const existingMap = new Map(existingSubjects.map((subject) => [normalise(subject.title), subject.id]));
+  const existingMap = new Map(
+    existingSubjects.map((subject) => [normalise(subject.title), subject.id]),
+  );
   console.log(`   Found ${existingSubjects.length} existing subjects\n`);
 
   const subjectIds = [];
@@ -164,17 +179,21 @@ async function main() {
 
   console.log("Fetching grades...");
   const grades = await fetchAllGrades(token);
-  const grade = grades.find((item) => normalise(item.title) === normalise(TARGET_GRADE_TITLE));
+  const grade = grades.find(
+    (item) => normalise(item.title) === normalise(TARGET_GRADE_TITLE),
+  );
 
   if (!grade) {
     const titles = grades.map((item) => `  - ${item.title}`).join("\n");
-    throw new Error(`Grade "${TARGET_GRADE_TITLE}" not found. Available grades:\n${titles}`);
+    throw new Error(
+      `Grade "${TARGET_GRADE_TITLE}" not found. Available grades:\n${titles}`,
+    );
   }
 
   console.log(`   Found grade: "${grade.title}" (${grade.id})`);
 
   const existingGradeSubjectIds = (grade.subjects ?? []).map((subject) =>
-    typeof subject === "string" ? subject : subject.id ?? subject._id,
+    typeof subject === "string" ? subject : (subject.id ?? subject._id),
   );
   const mergedIds = [...new Set([...existingGradeSubjectIds, ...subjectIds])];
 

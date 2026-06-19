@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { Skeleton } from "@/components/ui/skeleton";
@@ -8,7 +9,6 @@ import { statCards } from "@/types/dashboard-types";
 import type { SummaryKey } from "@/types/dashboard-types";
 import { AlertTriangle, ArrowUpRight, RefreshCw } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import NeedsAttentionPanel from "./NeedsAttentionPanel";
@@ -17,7 +17,6 @@ import TutorGrowthChart from "./TutorGrowthChart";
 import { useDashboardAnalytics } from "./useDashboardAnalytics";
 
 const formatNumber = (value: number) => value.toLocaleString("en-US");
-
 
 type StatTrend = {
   today: number;
@@ -110,12 +109,27 @@ export default function DashboardOverview() {
 
   // Build stat-card trend labels from the pre-computed backend data
   const statTrends = useMemo<Record<SummaryKey, StatTrend>>(() => {
-    const empty = { today: 0, label: "No change vs previous 7 days", className: "text-gray-500 dark:text-gray-400" };
-    if (!analytics.trends) return { registeredTutors: empty, requestTutorRequests: empty, registerAsTutorRequests: empty };
+    const empty = {
+      today: 0,
+      label: "No change vs previous 7 days",
+      className: "text-gray-500 dark:text-gray-400",
+    };
+    if (!analytics.trends)
+      return {
+        registeredTutors: empty,
+        requestTutorRequests: empty,
+        registerAsTutorRequests: empty,
+      };
     return {
-      registeredTutors: buildStatTrendFromServer(analytics.trends.registeredTutors),
-      requestTutorRequests: buildStatTrendFromServer(analytics.trends.requestTutorRequests),
-      registerAsTutorRequests: buildStatTrendFromServer(analytics.trends.registerAsTutorRequests),
+      registeredTutors: buildStatTrendFromServer(
+        analytics.trends.registeredTutors,
+      ),
+      requestTutorRequests: buildStatTrendFromServer(
+        analytics.trends.requestTutorRequests,
+      ),
+      registerAsTutorRequests: buildStatTrendFromServer(
+        analytics.trends.registerAsTutorRequests,
+      ),
     };
   }, [analytics.trends]);
 
@@ -152,22 +166,20 @@ export default function DashboardOverview() {
           ) : (
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="flex min-w-0 items-center gap-4">
-                <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-800">
+                <span className="h-12 w-12 shrink-0 overflow-hidden rounded-full ring-2 ring-white dark:ring-gray-900">
                   {avatarSrc && !isImageError ? (
-                    <Image
-                      width={48}
-                      height={48}
+                    <img
                       src={avatarSrc}
                       alt={`${displayName} avatar`}
                       className="h-full w-full object-cover"
                       onError={() => setIsImageError(true)}
                     />
                   ) : (
-                    <span className="text-sm font-semibold text-gray-600 dark:text-gray-300">
-                      {getInitials(displayName)}
+                    <span className="flex h-full w-full items-center justify-center bg-blue-600 text-sm font-bold text-white select-none">
+                      {(displayName?.[0] || "A").toUpperCase()}
                     </span>
                   )}
-                </div>
+                </span>
 
                 <div className="min-w-0">
                   <p className="text-sm text-gray-500 dark:text-gray-400">

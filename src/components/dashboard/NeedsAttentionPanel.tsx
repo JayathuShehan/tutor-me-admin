@@ -26,7 +26,6 @@ type AttentionItem = {
 
 const formatNumber = (value: number) => value.toLocaleString("en-US");
 
-
 export default function NeedsAttentionPanel({
   analytics,
   className = "",
@@ -35,7 +34,8 @@ export default function NeedsAttentionPanel({
   className?: string;
 }) {
   const openTutorRequests = analytics.attention?.openTutorRequestsTotal ?? 0;
-  const latestInquirySenderName = analytics.attention?.latestInquirySenderName ?? null;
+  const latestInquirySenderName =
+    analytics.attention?.latestInquirySenderName ?? null;
 
   const items: AttentionItem[] = [
     {

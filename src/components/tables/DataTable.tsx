@@ -52,7 +52,9 @@ export interface BulkDeleteConfig<T> {
 }
 
 const hasStickyLeftClass = (className?: string) =>
-  Boolean(className?.match(/(^|\s)sticky(\s|$)/) && className.includes("left-"));
+  Boolean(
+    className?.match(/(^|\s)sticky(\s|$)/) && className.includes("left-"),
+  );
 
 const hasStickyRightClass = (className?: string) =>
   Boolean(
@@ -63,7 +65,9 @@ const CHECKBOX_COLUMN_WIDTH = 52;
 const DEFAULT_STICKY_COLUMN_WIDTH = 180;
 
 const getPxValueFromClass = (className: string, prefix: string) => {
-  const match = className.match(new RegExp(`(?:^|\\s)${prefix}-\\[(\\d+)px\\]`));
+  const match = className.match(
+    new RegExp(`(?:^|\\s)${prefix}-\\[(\\d+)px\\]`),
+  );
   return match ? Number(match[1]) : null;
 };
 
@@ -475,7 +479,9 @@ export default function DataTable<T extends { id: string | number }>({
 
     setIsBulkStatusUpdating(true);
     const results = await Promise.allSettled(
-      selectedRows.map((row) => bulkStatusUpdate.updateRow(row, bulkStatusValue)),
+      selectedRows.map((row) =>
+        bulkStatusUpdate.updateRow(row, bulkStatusValue),
+      ),
     );
     setIsBulkStatusUpdating(false);
     resetBulkStatusSelection();
@@ -809,8 +815,7 @@ export default function DataTable<T extends { id: string | number }>({
                             aria-label={`Select row ${row.id}`}
                             disabled={
                               !(
-                                (bulkDelete?.isRowSelectable?.(row) ??
-                                  true) &&
+                                (bulkDelete?.isRowSelectable?.(row) ?? true) &&
                                 (bulkStatusUpdate?.isRowSelectable?.(row) ??
                                   true)
                               )
@@ -825,8 +830,7 @@ export default function DataTable<T extends { id: string | number }>({
                         `${col.className ?? ""} ${col.headClassName ?? ""} ${col.bodyClassName ?? ""}`,
                       );
                       const isStickyColumn = Boolean(
-                        stickyMeta?.isLeftSticky ||
-                          isRightStickyColumn,
+                        stickyMeta?.isLeftSticky || isRightStickyColumn,
                       );
 
                       return (

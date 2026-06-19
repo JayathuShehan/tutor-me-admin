@@ -43,7 +43,12 @@ export const testimonialSchema = z.object({
     avatar: z
       .string()
       .transform((value) => trimText(value) as string)
-      .pipe(z.string().url("Avatar is required.")),
+      .pipe(
+        z.union([
+          z.literal(""),
+          z.string().url("Please upload a valid image."),
+        ]),
+      ),
   }),
 });
 
