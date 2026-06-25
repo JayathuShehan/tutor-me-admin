@@ -30,4 +30,5 @@ export const Endpoints = {
   BonusTransactions: "/v1/bonus-transactions",
   Referees: "/v1/referees",
   RefereeEmailAvailability: "/v1/referees/email-availability",
+  ClearUserReferralCode: "/v1/users/clear-referral-code",
 };

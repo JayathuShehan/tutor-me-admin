@@ -88,7 +88,9 @@ export const TutorsApi = baseApi.injectEndpoints({
           ...(rejectionMessage !== undefined ? { rejectionMessage } : {}),
         },
       }),
-      invalidatesTags: ["FindATutor", "Users", "Dashboard"],
+      // "Referrals" must be invalidated because approval/rejection changes
+      // which tutors count toward pendingRewards in the summary aggregation.
+      invalidatesTags: ["FindATutor", "Users", "Dashboard", "Referrals"],
     }),
 
     deleteTutor: build.mutation<void, string>({
@@ -96,7 +98,9 @@ export const TutorsApi = baseApi.injectEndpoints({
         url: `${Endpoints.FindATutor}/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: ["FindATutor", "Users", "Dashboard"],
+      // "Referrals" must be invalidated because deleting a referred tutor
+      // may reduce totalReferrals in the summary aggregation.
+      invalidatesTags: ["FindATutor", "Users", "Dashboard", "Referrals"],
     }),
 
     sendTempPasswordTutor: build.mutation<void, string>({

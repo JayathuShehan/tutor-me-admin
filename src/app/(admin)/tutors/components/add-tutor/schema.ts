@@ -1,9 +1,7 @@
 import {
   CLASS_TYPE_VALUES,
   EDUCATION_VALUES_ADD,
-  NATIONALITY_VALUES,
   PREFERRED_LOCATION_VALUES,
-  RACE_VALUES,
   TUTOR_GENDER_VALUES,
   TUTOR_TYPE_VALUES,
 } from "@/configs/app-constants";
@@ -57,10 +55,6 @@ export const addTutorSchema = z
 
     grades: z.array(z.string()).min(1, "Select at least one grade"),
     subjects: z.array(z.string()).min(1, "Select at least one subject"),
-    nationality: z.enum(NATIONALITY_VALUES, {
-      message: "Nationality is required",
-    }),
-    race: z.enum(RACE_VALUES, { message: "Race is required" }),
 
     classType: z
       .array(z.enum(CLASS_TYPE_VALUES))
@@ -81,14 +75,6 @@ export const addTutorSchema = z
     highestEducation: z.enum(EDUCATION_VALUES_ADD, {
       message: "Highest Education is required",
     }),
-
-    academicDetails: z
-      .string()
-      .min(1, "Academic Details are required")
-      .max(1000),
-    teachingSummary: z.string().min(1, "Teaching Summary is required").max(750),
-    studentResults: z.string().min(1, "Student Results are required").max(750),
-    sellingPoints: z.string().min(1, "Selling Points are required").max(750),
 
     certificatesAndQualifications: z
       .array(
@@ -156,18 +142,12 @@ export const initialTutorFormValues: AddTutorFormValues = {
   tutorMediums: [],
   grades: [],
   subjects: [],
-  nationality: "" as AddTutorFormValues["nationality"],
-  race: "" as AddTutorFormValues["race"],
 
   classType: [],
   preferredLocations: [],
   tutorType: [],
   yearsExperience: 0,
   highestEducation: "" as AddTutorFormValues["highestEducation"],
-  academicDetails: "",
-  teachingSummary: "",
-  studentResults: "",
-  sellingPoints: "",
   certificatesAndQualifications: [],
   password: "",
   confirmPassword: "",

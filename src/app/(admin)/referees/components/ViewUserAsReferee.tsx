@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
+
 import {
   Dialog,
   DialogClose,
@@ -11,25 +12,17 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { Users } from "@/types/response-types";
 import { Copy, Eye, X } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
 
-interface RefereeDetailsProps {
-  name: string;
-  email: string;
-  contactNumber: string;
-  gender?: string;
-  avatar?: string;
-  referralCode: string;
+interface Props {
+  user: Users;
   referralCount: number;
-  createdAt?: string;
-  accountName?: string;
-  accountNumber?: string;
-  bankName?: string;
 }
 
-function CopyableDisplayField({
+function CopyableField({
   label,
   value,
   className,
@@ -38,17 +31,15 @@ function CopyableDisplayField({
   value?: string | null;
   className: string;
 }) {
-  const copyValue = String(value ?? "").trim();
-  const canCopy = Boolean(copyValue);
+  const v = String(value ?? "").trim();
+  const canCopy = Boolean(v);
 
   const handleCopy = async () => {
     if (!canCopy) return;
-
     try {
-      await navigator.clipboard.writeText(copyValue);
+      await navigator.clipboard.writeText(v);
       toast.success(`${label} copied to clipboard`);
-    } catch (error) {
-      console.error(`Failed to copy ${label}:`, error);
+    } catch {
       toast.error(`Failed to copy ${label.toLowerCase()}`);
     }
   };
@@ -58,13 +49,11 @@ function CopyableDisplayField({
       type="button"
       onClick={handleCopy}
       disabled={!canCopy}
-      aria-label={canCopy ? `Copy ${label}` : undefined}
-      title={canCopy ? `Click to copy ${label.toLowerCase()}` : undefined}
       className={`${className} group flex items-center justify-between gap-3 text-left ${
         canCopy ? "cursor-pointer" : "cursor-default"
       }`}
     >
-      <span className="min-w-0 flex-1 truncate">{copyValue || "-"}</span>
+      <span className="min-w-0 flex-1 truncate">{v || "—"}</span>
       {canCopy && (
         <>
           <span className="shrink-0 text-gray-400 opacity-0 duration-300 group-hover:opacity-100">
@@ -77,31 +66,29 @@ function CopyableDisplayField({
   );
 }
 
-export function RefereeDetails({
-  name,
-  email,
-  contactNumber,
-  gender,
-  avatar,
-  referralCode,
-  referralCount,
-  createdAt,
-  accountName,
-  accountNumber,
-  bankName,
-}: RefereeDetailsProps) {
+export function ViewUserAsReferee({ user, referralCount }: Props) {
   const [open, setOpen] = useState(false);
 
-  const displayFieldClass =
+  const fieldClass =
     "w-full rounded-md border border-gray-200 bg-gray-50 py-2.5 px-3 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-700 dark:text-white/90";
-  const displayValue = (value?: string) =>
-    value && value !== "" ? value : "-";
+
+  const genderLabel = user.gender
+    ? user.gender.charAt(0).toUpperCase() + user.gender.slice(1)
+    : "—";
+
+  const roleLabel = user.role
+    ? user.role.charAt(0).toUpperCase() + user.role.slice(1)
+    : "—";
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Eye cursor="pointer" className="text-blue-500 hover:text-blue-700" />
+        <Eye
+          cursor="pointer"
+          className="text-blue-500 hover:text-blue-700"
+        />
       </DialogTrigger>
+
       <DialogContent
         showCloseButton={false}
         className="sm:max-w-[625px] bg-white z-50 dark:bg-gray-800 dark:text-white/90 p-0 overflow-hidden [&>div:last-child]:flex [&>div:last-child]:min-h-0 [&>div:last-child]:flex-col [&>div:last-child]:overflow-hidden [&>div:last-child]:p-0"
@@ -109,121 +96,92 @@ export function RefereeDetails({
         <DialogHeader className="shrink-0 flex-row items-start justify-between bg-white dark:bg-gray-800 px-6 py-4 border-b z-40">
           <div className="space-y-2 text-left">
             <DialogTitle>Details</DialogTitle>
-            <DialogDescription>Referee Details</DialogDescription>
+            <DialogDescription>Registered User — Referee Details</DialogDescription>
           </div>
           <DialogClose asChild>
             <button
               type="button"
-              className="flex size-8 items-center justify-center rounded-md text-gray-500 transition hover:bg-gray-100 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:text-gray-300 dark:hover:bg-white/10 dark:hover:text-white"
+              className="flex size-8 items-center justify-center rounded-md text-gray-500 transition hover:bg-gray-100 hover:text-gray-800 focus:outline-none dark:text-gray-300 dark:hover:bg-white/10 dark:hover:text-white"
               aria-label="Close"
             >
               <X className="size-4" />
             </button>
           </DialogClose>
         </DialogHeader>
+
         <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin px-6 py-6">
           <div className="grid gap-4">
+            {/* Profile picture */}
             <div className="grid gap-3">
               <Label>Profile Picture</Label>
               <div className="w-full flex justify-center">
                 <div className="w-35 h-35 overflow-hidden border border-gray-200 rounded-full dark:border-gray-800">
                   <img
-                    src={avatar || "/images/user/user.png"}
+                    src={user.avatar || "/images/user/user.png"}
                     alt="avatar"
                     className="h-full w-full object-cover"
                   />
                 </div>
               </div>
             </div>
+
             <div className="grid gap-3">
               <Label>Name</Label>
-              <CopyableDisplayField
-                label="Name"
-                value={name}
-                className={cn(displayFieldClass)}
-              />
+              <CopyableField label="Name" value={user.name} className={cn(fieldClass)} />
             </div>
+
             <div className="grid gap-3">
               <Label>Email</Label>
-              <CopyableDisplayField
+              <CopyableField
                 label="Email"
-                value={email}
-                className={cn(
-                  displayFieldClass,
-                  "min-h-[2.5rem]",
-                  "overflow-auto",
-                )}
+                value={user.email}
+                className={cn(fieldClass, "min-h-[2.5rem] overflow-auto")}
               />
             </div>
+
             <div className="grid gap-3">
               <Label>Contact Number</Label>
-              <CopyableDisplayField
+              <CopyableField
                 label="Contact Number"
-                value={contactNumber}
-                className={cn(
-                  displayFieldClass,
-                  "min-h-[2.5rem]",
-                  "overflow-auto",
-                )}
+                value={user.phoneNumber}
+                className={cn(fieldClass, "min-h-[2.5rem] overflow-auto")}
               />
             </div>
+
             <div className="grid gap-3">
               <Label>Gender</Label>
-              <div
-                className={cn(
-                  displayFieldClass,
-                  "min-h-[2.5rem]",
-                  "overflow-auto",
-                )}
-              >
-                {displayValue(
-                  gender
-                    ? gender.charAt(0).toUpperCase() + gender.slice(1)
-                    : "-",
-                )}
-              </div>
-            </div>
-            <div className="grid gap-3">
-              <Label>Referral Code</Label>
-              <CopyableDisplayField
-                label="Referral Code"
-                value={referralCode}
-                className={cn(
-                  displayFieldClass,
-                  "min-h-[2.5rem]",
-                  "overflow-auto font-mono tracking-wider",
-                )}
-              />
-            </div>
-            <div className="grid gap-3">
-              <Label>Referral Count</Label>
-              <div
-                className={cn(
-                  displayFieldClass,
-                  "min-h-[2.5rem]",
-                  "overflow-auto",
-                )}
-              >
-                {referralCount}
-              </div>
-            </div>
-            <div className="grid gap-3">
-              <Label>Joined Date</Label>
-              <div
-                className={cn(
-                  displayFieldClass,
-                  "min-h-[2.5rem]",
-                  "overflow-auto",
-                )}
-              >
-                {createdAt
-                  ? new Date(createdAt)
-                      .toLocaleDateString("en-CA")
-                      .replace(/-/g, "/")
-                  : "-"}
+              <div className={cn(fieldClass, "min-h-[2.5rem] overflow-auto")}>
+                {genderLabel}
               </div>
             </div>
 
+            <div className="grid gap-3">
+              <Label>Role</Label>
+              <div className={cn(fieldClass, "min-h-[2.5rem] overflow-auto")}>
+                {roleLabel}
+              </div>
+            </div>
+
+            <div className="grid gap-3">
+              <Label>Referral Code</Label>
+              <CopyableField
+                label="Referral Code"
+                value={user.referralCode}
+                className={cn(
+                  fieldClass,
+                  "min-h-[2.5rem] overflow-auto font-mono tracking-wider",
+                )}
+              />
+            </div>
+
+            <div className="grid gap-3">
+              <Label>Referral Count</Label>
+              <div className={cn(fieldClass, "min-h-[2.5rem] overflow-auto")}>
+                {referralCount}
+              </div>
+            </div>
+
+            {/* Bank details */}
             <div className="border-t border-gray-200 dark:border-gray-700 pt-2">
               <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-3">
                 Bank Details
@@ -231,30 +189,29 @@ export function RefereeDetails({
               <div className="grid gap-3">
                 <div className="grid gap-3">
                   <Label>Account Name</Label>
-                  <CopyableDisplayField
+                  <CopyableField
                     label="Account Name"
-                    value={accountName}
-                    className={cn(displayFieldClass, "min-h-[2.5rem]")}
+                    value={user.accountName}
+                    className={cn(fieldClass, "min-h-[2.5rem]")}
                   />
                 </div>
                 <div className="grid gap-3">
                   <Label>Account Number</Label>
-                  <CopyableDisplayField
+                  <CopyableField
                     label="Account Number"
-                    value={accountNumber}
+                    value={user.accountNumber}
                     className={cn(
-                      displayFieldClass,
-                      "min-h-[2.5rem]",
-                      "font-mono tracking-wider",
+                      fieldClass,
+                      "min-h-[2.5rem] font-mono tracking-wider",
                     )}
                   />
                 </div>
                 <div className="grid gap-3">
                   <Label>Bank Name</Label>
-                  <CopyableDisplayField
+                  <CopyableField
                     label="Bank Name"
-                    value={bankName}
-                    className={cn(displayFieldClass, "min-h-[2.5rem]")}
+                    value={user.bankName}
+                    className={cn(fieldClass, "min-h-[2.5rem]")}
                   />
                 </div>
               </div>

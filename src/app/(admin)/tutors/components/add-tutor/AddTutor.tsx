@@ -23,14 +23,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import {
   CLASS_TYPE_OPTIONS,
   EDUCATION_OPTIONS_ADD,
-  NATIONALITY_VALUES,
   NOT_PREFERRED_LOCATION_VALUE,
   PREFERRED_LOCATION_OPTIONS,
-  RACE_VALUES,
   TUTOR_GENDER_VALUES,
   TUTOR_MEDIUM_OPTIONS,
   TUTOR_TYPE_OPTIONS,
@@ -478,12 +475,6 @@ export function AddTutor() {
       ...rest,
       email: normalizedEmail,
       fullName: normalizeTextSpaces(data.fullName) as string,
-      academicDetails: normalizeTextSpaces(
-        data.academicDetails || "",
-      ) as string,
-      teachingSummary: normalizeTextSpaces(data.teachingSummary) as string,
-      studentResults: normalizeTextSpaces(data.studentResults) as string,
-      sellingPoints: normalizeTextSpaces(data.sellingPoints) as string,
       preferredLocations: isOnlineOnlyClassTypes(data.classType)
         ? [NOT_PREFERRED_LOCATION_VALUE]
         : data.preferredLocations,
@@ -609,37 +600,6 @@ export function AddTutor() {
     },
   });
 
-  const academicDetailsRegister = form.register("academicDetails", {
-    onBlur: (event) => {
-      setValue("academicDetails", collapseTextSpaces(event.target.value), {
-        shouldValidate: true,
-      });
-    },
-  });
-
-  const teachingSummaryRegister = form.register("teachingSummary", {
-    onBlur: (event) => {
-      setValue("teachingSummary", collapseTextSpaces(event.target.value), {
-        shouldValidate: true,
-      });
-    },
-  });
-
-  const studentResultsRegister = form.register("studentResults", {
-    onBlur: (event) => {
-      setValue("studentResults", collapseTextSpaces(event.target.value), {
-        shouldValidate: true,
-      });
-    },
-  });
-
-  const sellingPointsRegister = form.register("sellingPoints", {
-    onBlur: (event) => {
-      setValue("sellingPoints", collapseTextSpaces(event.target.value), {
-        shouldValidate: true,
-      });
-    },
-  });
   const uploadErrorMessage = getUploadErrorMessage(
     formState.errors.certificatesAndQualifications,
   );
@@ -886,36 +846,6 @@ export function AddTutor() {
                   options={[...TUTOR_GENDER_VALUES]}
                   placeholder="Select your gender"
                 />
-
-                <SelectField
-                  label="Nationality *"
-                  id="nationality"
-                  value={watch("nationality")}
-                  error={formState.errors.nationality?.message}
-                  onChange={(val) =>
-                    setValue(
-                      "nationality",
-                      val as AddTutorFormValues["nationality"],
-                      { shouldValidate: true },
-                    )
-                  }
-                  options={[...NATIONALITY_VALUES]}
-                  placeholder="Select your nationality"
-                />
-
-                <SelectField
-                  label="Race *"
-                  id="race"
-                  value={watch("race")}
-                  error={formState.errors.race?.message}
-                  onChange={(val) =>
-                    setValue("race", val as AddTutorFormValues["race"], {
-                      shouldValidate: true,
-                    })
-                  }
-                  options={[...RACE_VALUES]}
-                  placeholder="Select your ethnicity"
-                />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5 z-62">
@@ -1091,34 +1021,6 @@ export function AddTutor() {
                 />
               </div>
 
-              <TextareaField
-                label="Academic Details *"
-                id="academicDetails"
-                register={academicDetailsRegister}
-                error={formState.errors.academicDetails?.message}
-              />
-
-              <TextareaField
-                label="Teaching Summary *"
-                id="teachingSummary"
-                register={teachingSummaryRegister}
-                error={formState.errors.teachingSummary?.message}
-              />
-
-              <TextareaField
-                label="Student Results *"
-                id="studentResults"
-                register={studentResultsRegister}
-                error={formState.errors.studentResults?.message}
-              />
-
-              <TextareaField
-                label="Selling Points *"
-                id="sellingPoints"
-                register={sellingPointsRegister}
-                error={formState.errors.sellingPoints?.message}
-              />
-
               <div className="space-y-3 rounded-md border p-4">
                 <Label>Document Upload *</Label>
                 <MultiFileUploader
@@ -1206,26 +1108,6 @@ function SelectField({
           ))}
         </SelectContent>
       </Select>
-      {error && <p className="text-sm text-red-500">{error}</p>}
-    </div>
-  );
-}
-
-function TextareaField({
-  label,
-  id,
-  register,
-  error,
-}: {
-  label: string;
-  id: string;
-  register: ReturnType<UseFormReturn<AddTutorFormValues>["register"]>;
-  error?: string;
-}) {
-  return (
-    <div className="space-y-2">
-      <Label htmlFor={id}>{label}</Label>
-      <Textarea id={id} placeholder={label.replace(" *", "")} {...register} />
       {error && <p className="text-sm text-red-500">{error}</p>}
     </div>
   );
