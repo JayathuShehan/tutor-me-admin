@@ -20,44 +20,33 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Spinner } from "@/components/ui/spinner";
-import {
-  useLazyGetRefereeEmailAvailabilityQuery,
-  useUpdateRefereeMutation,
-} from "@/store/api/splits/referees";
+import { useUpdateRefereeMutation } from "@/store/api/splits/referees";
 import { Referee } from "@/types/response-types";
 import { getErrorInApiResult } from "@/utils/api";
 import {
+  accountNumberInputRegisterOptions,
+  bankNameInputRegisterOptions,
   normalizeTextSpaces,
-  removeWhitespace,
   singleSpaceTextInputRegisterOptions,
 } from "@/utils/form-normalizers";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CircleCheck, CircleX, SquarePen } from "lucide-react";
+import { SquarePen } from "lucide-react";
 import NextImage from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import { AddRefereeFormValues, addRefereeSchema } from "./schema";
 
-const EMAIL_CHECK_DELAY_MS = 500;
-const DUPLICATE_EMAIL_MESSAGE = "Email already exists";
-const EMAIL_FORMAT_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-type EmailAvailabilityState = "available" | "unavailable" | null;
+const EMAIL_IMMUTABLE_MESSAGE = "Email cannot be edited";
 
 export function EditReferee({ referee }: { referee: Referee }) {
   const [open, setOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(
     referee.avatar || null,
   );
-  const [emailAvailability, setEmailAvailability] =
-    useState<EmailAvailabilityState>(null);
   const formId = `edit-referee-form-${referee.id}`;
 
   const [updateReferee, { isLoading }] = useUpdateRefereeMutation();
-  const [checkRefereeEmailAvailability, { isFetching: isCheckingEmail }] =
-    useLazyGetRefereeEmailAvailabilityQuery();
 
   const initialValues: AddRefereeFormValues = {
     name: referee.name,
@@ -65,6 +54,9 @@ export function EditReferee({ referee }: { referee: Referee }) {
     contactNumber: referee.contactNumber,
     gender: referee.gender as AddRefereeFormValues["gender"],
     avatar: referee.avatar || "",
+    accountName: referee.accountName || "",
+    accountNumber: referee.accountNumber || "",
+    bankName: referee.bankName || "",
   };
 
   const form = useForm<AddRefereeFormValues>({
@@ -73,17 +65,11 @@ export function EditReferee({ referee }: { referee: Referee }) {
     mode: "onChange",
   });
 
-  const { formState, setValue, setError, clearErrors, setFocus, reset, watch } =
-    form;
-
-  const email = form.watch("email");
-  const latestEmailRef = useRef("");
-  const originalEmail = referee.email.toLowerCase();
+  const { formState, setValue, reset, watch } = form;
 
   const resetState = () => {
     reset(initialValues);
     setPreviewUrl(referee.avatar || null);
-    setEmailAvailability(null);
   };
 
   const handleDialogOpenChange = (isOpen: boolean) => {
@@ -91,105 +77,17 @@ export function EditReferee({ referee }: { referee: Referee }) {
     if (!isOpen) resetState();
   };
 
-  useEffect(() => {
-    const normalizedEmail =
-      typeof email === "string" ? removeWhitespace(email).toLowerCase() : "";
-
-    latestEmailRef.current = normalizedEmail;
-
-    if (
-      !open ||
-      !normalizedEmail ||
-      !EMAIL_FORMAT_PATTERN.test(normalizedEmail) ||
-      normalizedEmail === originalEmail
-    ) {
-      setEmailAvailability(null);
-      return;
-    }
-
-    const timeoutId = window.setTimeout(async () => {
-      const result = await checkRefereeEmailAvailability(normalizedEmail, true);
-
-      if (latestEmailRef.current !== normalizedEmail) return;
-      if (!result.data) return;
-
-      if (!result.data.available) {
-        setEmailAvailability("unavailable");
-        setError("email", {
-          type: "server",
-          message: result.data.message || DUPLICATE_EMAIL_MESSAGE,
-        });
-        return;
-      }
-
-      setEmailAvailability("available");
-      clearErrors("email");
-    }, EMAIL_CHECK_DELAY_MS);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [
-    checkRefereeEmailAvailability,
-    clearErrors,
-    email,
-    open,
-    originalEmail,
-    setError,
-  ]);
-
-  const emailRegister = form.register("email", {
-    onChange: (event) => {
-      const cleaned = removeWhitespace(event.target.value);
-      setEmailAvailability(null);
-
-      if (
-        (formState.errors.email as { type?: string } | undefined)?.type ===
-        "server"
-      ) {
-        clearErrors("email");
-      }
-
-      if (cleaned !== event.target.value) {
-        event.target.value = cleaned;
-        setValue("email", cleaned, { shouldValidate: formState.isSubmitted });
-      }
-    },
-    onBlur: (event) => {
-      setValue("email", removeWhitespace(event.target.value).toLowerCase(), {
-        shouldValidate: true,
-      });
-    },
-  });
-
   const onSubmit = async (data: AddRefereeFormValues) => {
-    const normalizedEmail = removeWhitespace(data.email).toLowerCase();
-    setValue("email", normalizedEmail, { shouldValidate: true });
-
-    if (normalizedEmail !== originalEmail) {
-      const emailAvailabilityResult =
-        await checkRefereeEmailAvailability(normalizedEmail);
-
-      if (
-        emailAvailabilityResult.data &&
-        !emailAvailabilityResult.data.available
-      ) {
-        setEmailAvailability("unavailable");
-        setError("email", {
-          type: "server",
-          message:
-            emailAvailabilityResult.data.message || DUPLICATE_EMAIL_MESSAGE,
-        });
-        setFocus("email");
-        return;
-      }
-    }
-
     const result = await updateReferee({
       id: referee.id,
       name: normalizeTextSpaces(data.name) as string,
-      email: normalizedEmail,
+      email: referee.email,
       contactNumber: data.contactNumber,
       gender: data.gender,
       avatar: data.avatar || undefined,
+      accountName: data.accountName || undefined,
+      accountNumber: data.accountNumber || undefined,
+      bankName: data.bankName || undefined,
     });
 
     const error = getErrorInApiResult(result);
@@ -246,61 +144,25 @@ export function EditReferee({ referee }: { referee: Referee }) {
                 )}
               </div>
 
-              <div className="space-y-2">
+              <div
+                className="space-y-2 cursor-not-allowed"
+                title={EMAIL_IMMUTABLE_MESSAGE}
+              >
                 <Label htmlFor="email">Email *</Label>
-                <div className="relative">
-                  <Input
-                    id="email"
-                    type="text"
-                    inputMode="email"
-                    placeholder="e.g johndoe@gmail.com"
-                    autoComplete="email"
-                    className={`pr-10 ${
-                      formState.errors.email ||
-                      emailAvailability === "unavailable"
-                        ? "border-red-500"
-                        : ""
-                    }`}
-                    {...emailRegister}
-                  />
-                  <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3">
-                    {isCheckingEmail ? (
-                      <Spinner className="text-gray-400" />
-                    ) : formState.errors.email ||
-                      emailAvailability === "unavailable" ? (
-                      <CircleX
-                        className="h-4 w-4 text-red-500"
-                        aria-hidden="true"
-                      />
-                    ) : emailAvailability === "available" ? (
-                      <CircleCheck
-                        className="h-4 w-4 text-green-600"
-                        aria-hidden="true"
-                      />
-                    ) : null}
-                  </span>
-                </div>
-                {formState.errors.email ? (
-                  <p className="min-h-4 text-sm leading-4 text-red-500">
-                    {formState.errors.email.message}
-                  </p>
-                ) : emailAvailability === "unavailable" ? (
-                  <p className="min-h-4 text-sm leading-4 text-red-500">
-                    {DUPLICATE_EMAIL_MESSAGE}
-                  </p>
-                ) : isCheckingEmail ? (
-                  <p className="min-h-4 text-sm leading-4 text-gray-500">
-                    Checking email availability...
-                  </p>
-                ) : emailAvailability === "available" ? (
-                  <p className="min-h-4 text-sm leading-4 text-green-600">
-                    Email is available
-                  </p>
-                ) : (
-                  <p className="min-h-4 text-sm leading-4 text-muted-foreground">
-                    Enter a valid email address
-                  </p>
-                )}
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="e.g johndoe@gmail.com"
+                  value={watch("email") || ""}
+                  className="cursor-not-allowed"
+                  disabled
+                  readOnly
+                  aria-readonly="true"
+                  aria-describedby="email-immutable-help"
+                />
+                <p id="email-immutable-help" className="sr-only">
+                  {EMAIL_IMMUTABLE_MESSAGE}
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -376,6 +238,75 @@ export function EditReferee({ referee }: { referee: Referee }) {
                     className="mt-2 h-24 w-24 object-cover rounded-full mx-auto"
                   />
                 )}
+              </div>
+
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-4">
+                  Bank Details (Optional)
+                </p>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="accountName">Account Name</Label>
+                    <Input
+                      id="accountName"
+                      placeholder="e.g. Nimal Perera"
+                      {...form.register(
+                        "accountName",
+                        bankNameInputRegisterOptions(
+                          "accountName",
+                          setValue,
+                          formState.isSubmitted,
+                        ),
+                      )}
+                    />
+                    {formState.errors.accountName && (
+                      <p className="text-sm text-red-500">
+                        {formState.errors.accountName.message}
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="accountNumber">Account Number</Label>
+                    <Input
+                      id="accountNumber"
+                      placeholder="e.g. 0012345678"
+                      inputMode="numeric"
+                      {...form.register(
+                        "accountNumber",
+                        accountNumberInputRegisterOptions(
+                          "accountNumber",
+                          setValue,
+                          formState.isSubmitted,
+                        ),
+                      )}
+                    />
+                    {formState.errors.accountNumber && (
+                      <p className="text-sm text-red-500">
+                        {formState.errors.accountNumber.message}
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="bankName">Bank Name</Label>
+                    <Input
+                      id="bankName"
+                      placeholder="e.g. Commercial Bank of Ceylon"
+                      {...form.register(
+                        "bankName",
+                        bankNameInputRegisterOptions(
+                          "bankName",
+                          setValue,
+                          formState.isSubmitted,
+                        ),
+                      )}
+                    />
+                    {formState.errors.bankName && (
+                      <p className="text-sm text-red-500">
+                        {formState.errors.bankName.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-2">

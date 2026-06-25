@@ -752,7 +752,7 @@ export function EditTutor({ id }: EditTutorProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="nationality">Nationality *</Label>
+                  <Label htmlFor="nationality">Nationality</Label>
                   <Select
                     onValueChange={(val) =>
                       setValue(
@@ -781,7 +781,7 @@ export function EditTutor({ id }: EditTutorProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="race">Race *</Label>
+                  <Label htmlFor="race">Race</Label>
                   <Select
                     onValueChange={(val) =>
                       setValue("race", val as UpdateTutorSchema["race"])
@@ -1005,7 +1005,7 @@ export function EditTutor({ id }: EditTutorProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="academicDetails">Academic Details *</Label>
+                <Label htmlFor="academicDetails">Academic Details</Label>
                 <Textarea
                   id="academicDetails"
                   placeholder="Academic Details"
@@ -1019,7 +1019,7 @@ export function EditTutor({ id }: EditTutorProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="teachingSummary">Teaching Summary *</Label>
+                <Label htmlFor="teachingSummary">Teaching Summary</Label>
                 <Textarea
                   id="teachingSummary"
                   placeholder="Teaching Summary"
@@ -1033,7 +1033,7 @@ export function EditTutor({ id }: EditTutorProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="studentResults">Student Results *</Label>
+                <Label htmlFor="studentResults">Student Results</Label>
                 <Textarea
                   id="studentResults"
                   placeholder="Student Results"
@@ -1047,7 +1047,7 @@ export function EditTutor({ id }: EditTutorProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="sellingPoints">Selling Points *</Label>
+                <Label htmlFor="sellingPoints">Selling Points</Label>
                 <Textarea
                   id="sellingPoints"
                   placeholder="Selling Points"

@@ -38,6 +38,64 @@ export const normalizeRoleInput = (value: string) =>
     .replace(/\s{2,}/g, " ")
     .trimStart();
 
+// Allows letters, spaces, hyphens, apostrophes, and parentheses —
+// the permitted character set for Account Name and Bank Name fields.
+export const normalizeBankNameInput = (value: string) =>
+  value
+    .replace(/[^A-Za-z' ()-]/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trimStart();
+
+// Strips every non-digit character for Account Number fields.
+export const normalizeAccountNumberInput = (value: string) =>
+  value.replace(/[^0-9]/g, "");
+
+export const bankNameInputRegisterOptions = <T extends FieldValues>(
+  name: Path<T>,
+  setValue: UseFormSetValue<T>,
+  shouldValidateOnChange = false,
+): Pick<RegisterOptions<T, Path<T>>, "onChange" | "onBlur"> => ({
+  onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const cleaned = normalizeBankNameInput(event.target.value);
+    if (cleaned !== event.target.value) {
+      event.target.value = cleaned;
+      setValue(name, cleaned as PathValue<T, Path<T>>, {
+        shouldValidate: shouldValidateOnChange,
+      });
+    }
+  },
+  onBlur: (event: FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setValue(
+      name,
+      collapseTextSpaces(event.target.value) as PathValue<T, Path<T>>,
+      { shouldValidate: true },
+    );
+  },
+});
+
+export const accountNumberInputRegisterOptions = <T extends FieldValues>(
+  name: Path<T>,
+  setValue: UseFormSetValue<T>,
+  shouldValidateOnChange = false,
+): Pick<RegisterOptions<T, Path<T>>, "onChange" | "onBlur"> => ({
+  onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const cleaned = normalizeAccountNumberInput(event.target.value);
+    if (cleaned !== event.target.value) {
+      event.target.value = cleaned;
+      setValue(name, cleaned as PathValue<T, Path<T>>, {
+        shouldValidate: shouldValidateOnChange,
+      });
+    }
+  },
+  onBlur: (event: FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setValue(
+      name,
+      normalizeAccountNumberInput(event.target.value) as PathValue<T, Path<T>>,
+      { shouldValidate: true },
+    );
+  },
+});
+
 export const normalizeDecimalInput = (value: string) => {
   const digitsAndDots = value.replace(/[^0-9.]/g, "");
   const [integerPart, ...decimalParts] = digitsAndDots.split(".");

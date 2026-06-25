@@ -136,6 +136,18 @@ export const UsersApi = baseApi.injectEndpoints({
         { type: "Users", id: "LIST" },
       ],
     }),
+
+    clearUserReferralCode: build.mutation<void, string>({
+      query: (id) => ({
+        url: `${Endpoints.ClearUserReferralCode}/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: "Users", id },
+        { type: "Users", id: "LIST" },
+        "FindATutor",
+      ],
+    }),
   }),
   overrideExisting: false,
 });
@@ -152,4 +164,5 @@ export const {
   useSendUserTempPasswordMutation,
   useUpdateUserPasswordMutation,
   useSendUserReferralCodeMutation,
+  useClearUserReferralCodeMutation,
 } = UsersApi;

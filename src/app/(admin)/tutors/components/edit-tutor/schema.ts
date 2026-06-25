@@ -104,19 +104,11 @@ export const updateTutorSchema = z
 
     highestEducation: z.enum(EDUCATION_VALUES_EDIT).optional(),
 
-    academicDetails: normalizedTextSchema.pipe(
-      z.string().min(1, "Academic Details is required").max(1000),
-    ),
+    academicDetails: normalizedTextSchema.pipe(z.string().max(1000)).optional(),
 
-    teachingSummary: normalizedTextSchema.pipe(
-      z.string().min(1, "Teaching Summary is required").max(750),
-    ),
-    studentResults: normalizedTextSchema.pipe(
-      z.string().min(1, "Student Results is required").max(750),
-    ),
-    sellingPoints: normalizedTextSchema.pipe(
-      z.string().min(1, "Selling Points is required").max(750),
-    ),
+    teachingSummary: normalizedTextSchema.pipe(z.string().max(750)).optional(),
+    studentResults: normalizedTextSchema.pipe(z.string().max(750)).optional(),
+    sellingPoints: normalizedTextSchema.pipe(z.string().max(750)).optional(),
 
     agreeTerms: z.boolean().optional(),
     agreeAssignmentInfo: z.boolean().optional(),

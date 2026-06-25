@@ -38,6 +38,9 @@ export const RefereesApi = baseApi.injectEndpoints({
         contactNumber: string;
         gender: string;
         avatar?: string;
+        accountName?: string;
+        accountNumber?: string;
+        bankName?: string;
       }
     >({
       query: (payload) => ({
@@ -57,6 +60,9 @@ export const RefereesApi = baseApi.injectEndpoints({
         contactNumber?: string;
         gender?: string;
         avatar?: string;
+        accountName?: string;
+        accountNumber?: string;
+        bankName?: string;
       }
     >({
       query: ({ id, ...payload }) => ({

@@ -12,6 +12,29 @@ export const addRefereeSchema = z.object({
     error: "Gender is required",
   }),
   avatar: z.string().optional(),
+  accountName: z
+    .string()
+    .max(100, "Account name too long")
+    .refine((v) => !v || /^[A-Za-z' ()-]+$/.test(v), {
+      message:
+        "Only letters, spaces, hyphens, apostrophes, and parentheses are allowed",
+    })
+    .optional(),
+  accountNumber: z
+    .string()
+    .max(30, "Account number too long")
+    .refine((v) => !v || /^[0-9]+$/.test(v), {
+      message: "Account number must contain only digits",
+    })
+    .optional(),
+  bankName: z
+    .string()
+    .max(100, "Bank name too long")
+    .refine((v) => !v || /^[A-Za-z' ()-]+$/.test(v), {
+      message:
+        "Only letters, spaces, hyphens, apostrophes, and parentheses are allowed",
+    })
+    .optional(),
 });
 
 export type AddRefereeFormValues = z.infer<typeof addRefereeSchema>;
@@ -22,4 +45,7 @@ export const initialRefereeFormValues: AddRefereeFormValues = {
   contactNumber: "",
   gender: "" as AddRefereeFormValues["gender"],
   avatar: "",
+  accountName: "",
+  accountNumber: "",
+  bankName: "",
 };

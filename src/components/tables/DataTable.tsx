@@ -287,8 +287,12 @@ export default function DataTable<T extends { id: string | number }>({
 
   useEffect(() => {
     if (!hasRowSelection) {
-      setSelectedIds(new Set());
-      setSelectedRowsById(new Map());
+      // Use functional updater so we only create a new reference when the
+      // collection is actually non-empty. Without this guard, calling
+      // setSelectedIds(new Set()) always produces a new object reference,
+      // which is in the dependency array and triggers the effect again → loop.
+      setSelectedIds((prev) => (prev.size > 0 ? new Set() : prev));
+      setSelectedRowsById((prev) => (prev.size > 0 ? new Map() : prev));
       return;
     }
 
