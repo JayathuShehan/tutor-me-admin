@@ -250,7 +250,7 @@ export function EditPaper({
         <SquarePen className="cursor-pointer text-blue-500 hover:text-blue-700" />
       </DialogTrigger>
 
-      <DialogContent className="w-[95vw] max-w-[425px] max-h-[85vh] overflow-hidden bg-white z-50 dark:bg-gray-800 dark:text-white/90 p-0 [&>div:last-child]:flex [&>div:last-child]:min-h-0 [&>div:last-child]:flex-col [&>div:last-child]:overflow-hidden [&>div:last-child]:p-0">
+      <DialogContent className="w-[95vw] sm:max-w-[425px] max-h-[85vh] overflow-hidden bg-white z-50 dark:bg-gray-800 dark:text-white/90 p-0 [&>div:last-child]:flex [&>div:last-child]:min-h-0 [&>div:last-child]:flex-col [&>div:last-child]:overflow-hidden [&>div:last-child]:p-0">
         <form
           onSubmit={updatePaperForm.handleSubmit(onSubmit)}
           className="flex flex-col flex-1 min-h-0 overflow-hidden min-w-0"

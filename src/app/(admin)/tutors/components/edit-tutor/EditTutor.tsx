@@ -150,8 +150,8 @@ export function EditTutor({ id }: EditTutorProps) {
       tutorMediums: [],
       grades: [],
       subjects: [],
-      nationality: "Sri Lankan",
-      race: "Sinhalese",
+      nationality: undefined,
+      race: undefined,
       status: "pending",
       classType: [],
       preferredLocations: [],
@@ -210,6 +210,21 @@ export function EditTutor({ id }: EditTutorProps) {
     if (!value) return fallback;
     return enumValues.includes(value as T) ? (value as T) : fallback;
   };
+
+  // Like safeEnumValue but leaves the field empty (undefined) when there is no
+  // saved value, so the Select shows its placeholder instead of a forced default.
+  const optionalEnumValue = <T extends string>(
+    value: string | undefined,
+    enumValues: readonly T[],
+  ): T | undefined => {
+    if (!value) return undefined;
+    return enumValues.includes(value as T) ? (value as T) : undefined;
+  };
+
+  // Sentinel used by the optional Selects (Nationality/Race) so the user can
+  // clear a chosen value and fall back to the placeholder. Radix does not allow
+  // an empty-string item value, so a non-empty sentinel is required.
+  const CLEAR_VALUE = "__clear__";
 
   const normalizeHighestEducation = (
     value: string | undefined,
@@ -383,12 +398,8 @@ export function EditTutor({ id }: EditTutorProps) {
       tutorMediums: data.tutorMediums || [],
       grades: data.grades || [],
       subjects: data.subjects || [],
-      nationality: safeEnumValue(
-        data.nationality,
-        NATIONALITY_VALUES,
-        "Sri Lankan",
-      ),
-      race: safeEnumValue(data.race, RACE_VALUES, "Sinhalese"),
+      nationality: optionalEnumValue(data.nationality, NATIONALITY_VALUES),
+      race: optionalEnumValue(data.race, RACE_VALUES),
       status: safeEnumValue(data.status, TUTOR_STATUS_VALUES, "pending"),
       classType: safeArrayEnumValue(data.classType, CLASS_TYPE_VALUES),
       preferredLocations: safeArrayEnumValue(
@@ -757,15 +768,26 @@ export function EditTutor({ id }: EditTutorProps) {
                     onValueChange={(val) =>
                       setValue(
                         "nationality",
-                        val as UpdateTutorSchema["nationality"],
+                        val === CLEAR_VALUE
+                          ? null
+                          : (val as UpdateTutorSchema["nationality"]),
+                        { shouldDirty: true, shouldValidate: true },
                       )
                     }
-                    value={watch("nationality")}
+                    value={watch("nationality") ?? ""}
                   >
                     <SelectTrigger id="nationality">
-                      <SelectValue placeholder="Select nationality" />
+                      <SelectValue placeholder="Select Nationality" />
                     </SelectTrigger>
                     <SelectContent>
+                      {watch("nationality") && (
+                        <SelectItem
+                          value={CLEAR_VALUE}
+                          className="text-gray-500 dark:text-gray-400"
+                        >
+                          Select Nationality
+                        </SelectItem>
+                      )}
                       {NATIONALITY_VALUES.map((v) => (
                         <SelectItem key={v} value={v}>
                           {v}
@@ -784,14 +806,28 @@ export function EditTutor({ id }: EditTutorProps) {
                   <Label htmlFor="race">Race</Label>
                   <Select
                     onValueChange={(val) =>
-                      setValue("race", val as UpdateTutorSchema["race"])
+                      setValue(
+                        "race",
+                        val === CLEAR_VALUE
+                          ? null
+                          : (val as UpdateTutorSchema["race"]),
+                        { shouldDirty: true, shouldValidate: true },
+                      )
                     }
-                    value={watch("race")}
+                    value={watch("race") ?? ""}
                   >
                     <SelectTrigger id="race">
-                      <SelectValue placeholder="Select race" />
+                      <SelectValue placeholder="Select Ethnicity" />
                     </SelectTrigger>
                     <SelectContent>
+                      {watch("race") && (
+                        <SelectItem
+                          value={CLEAR_VALUE}
+                          className="text-gray-500 dark:text-gray-400"
+                        >
+                          Select Ethnicity
+                        </SelectItem>
+                      )}
                       {RACE_VALUES.map((v) => (
                         <SelectItem key={v} value={v}>
                           {v}

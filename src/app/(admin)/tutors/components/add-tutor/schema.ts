@@ -1,6 +1,7 @@
 import {
   CLASS_TYPE_VALUES,
   EDUCATION_VALUES_ADD,
+  isMandatoryCertificateType,
   PREFERRED_LOCATION_VALUES,
   TUTOR_GENDER_VALUES,
   TUTOR_TYPE_VALUES,
@@ -11,6 +12,10 @@ const hasPhysicalClassType = (classTypes: string[] = []) =>
   classTypes.some((classType) =>
     classType.toLowerCase().startsWith("physical"),
   );
+
+const hasMandatoryCertificate = (
+  certificates: { type: string }[] = [],
+) => certificates.some((certificate) => isMandatoryCertificateType(certificate.type));
 
 export const addTutorSchema = z
   .object({
@@ -69,7 +74,7 @@ export const addTutorSchema = z
     yearsExperience: z
       .number()
       .int()
-      .min(1, "Years of Experience are required")
+      .min(0, "Years of Experience are required")
       .max(50),
 
     highestEducation: z.enum(EDUCATION_VALUES_ADD, {
@@ -126,6 +131,15 @@ export const addTutorSchema = z
         code: z.ZodIssueCode.custom,
         message: "Passwords do not match",
         path: ["confirmPassword"],
+      });
+    }
+
+    if (!hasMandatoryCertificate(data.certificatesAndQualifications)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Please upload at least one required document (e.g. Degree, A/L, O/L, Professional, or Teaching Certificate)",
+        path: ["certificatesAndQualifications"],
       });
     }
   });

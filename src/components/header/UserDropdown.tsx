@@ -4,6 +4,7 @@
 import { useAuthContext } from "@/context";
 import { useFetchUserByIdQuery } from "@/store/api/splits/users";
 import { ChevronDown, LogOut, UserRound } from "lucide-react";
+import { usePathname } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { SignOutConfirmationModal } from "../shared/SignOutConfirmationModal";
 import { Dropdown } from "../ui/dropdown/Dropdown";
@@ -11,6 +12,8 @@ import { DropdownItem } from "../ui/dropdown/DropdownItem";
 
 export default function UserDropdown() {
   const { user: authUser, logout } = useAuthContext();
+  const pathname = usePathname();
+  const isProfileActive = pathname === "/profile";
   const [isOpen, setIsOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImageError, setIsImageError] = useState(false);
@@ -124,9 +127,19 @@ export default function UserDropdown() {
               onItemClick={closeDropdown}
               tag="a"
               href="/profile"
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-theme-sm font-medium text-gray-700 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-200 dark:hover:bg-[#2a3040] dark:hover:text-white"
+              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-theme-sm font-medium transition ${
+                isProfileActive
+                  ? "bg-brand-50 text-brand-600 dark:bg-brand-500/[0.12] dark:text-brand-400"
+                  : "text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-200 dark:hover:bg-[#2a3040] dark:hover:text-white"
+              }`}
             >
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-gray-500 ring-1 ring-gray-200 dark:bg-white/[0.08] dark:text-gray-300 dark:ring-white/10">
+              <span
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ring-1 ${
+                  isProfileActive
+                    ? "bg-white text-brand-600 ring-brand-200 dark:bg-white/[0.08] dark:text-brand-400 dark:ring-brand-400/20"
+                    : "bg-white text-gray-500 ring-gray-200 dark:bg-white/[0.08] dark:text-gray-300 dark:ring-white/10"
+                }`}
+              >
                 <UserRound className="h-4 w-4" />
               </span>
               <span>User profile</span>

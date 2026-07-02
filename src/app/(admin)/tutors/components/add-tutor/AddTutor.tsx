@@ -890,6 +890,33 @@ export function AddTutor() {
                 </div>
               </div>
 
+              {/* Kept directly below Class Type: enabled only for physical
+                  class types, so grouping them makes the dependency clear. */}
+              <div className="space-y-2">
+                <MultiSelect
+                  label="Preferred Locations *"
+                  options={preferredLocationOptions}
+                  defaultSelected={watch("preferredLocations")}
+                  onChange={(selected) =>
+                    setValue(
+                      "preferredLocations",
+                      selected as AddTutorFormValues["preferredLocations"],
+                      { shouldValidate: true },
+                    )
+                  }
+                  disabled={isPreferredLocationsDisabled}
+                  searchable
+                />
+                {!isPreferredLocationsDisabled &&
+                  (formState.isSubmitted ||
+                    formState.touchedFields.preferredLocations) &&
+                  formState.errors.preferredLocations && (
+                    <p className="text-sm text-red-500">
+                      {formState.errors.preferredLocations.message}
+                    </p>
+                  )}
+              </div>
+
               <div className="space-y-2">
                 <MultiSelect
                   label="Tutor Mediums *"
@@ -949,31 +976,6 @@ export function AddTutor() {
                     {formState.errors.subjects.message}
                   </p>
                 )}
-              </div>
-
-              <div className="space-y-2">
-                <MultiSelect
-                  label="Preferred Locations *"
-                  options={preferredLocationOptions}
-                  defaultSelected={watch("preferredLocations")}
-                  onChange={(selected) =>
-                    setValue(
-                      "preferredLocations",
-                      selected as AddTutorFormValues["preferredLocations"],
-                      { shouldValidate: true },
-                    )
-                  }
-                  disabled={isPreferredLocationsDisabled}
-                  searchable
-                />
-                {!isPreferredLocationsDisabled &&
-                  (formState.isSubmitted ||
-                    formState.touchedFields.preferredLocations) &&
-                  formState.errors.preferredLocations && (
-                    <p className="text-sm text-red-500">
-                      {formState.errors.preferredLocations.message}
-                    </p>
-                  )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { Eye, FileImage, Loader2, Paperclip } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -11,8 +9,10 @@ import {
 } from "@/components/ui/table";
 import { useFetchBonusTransactionsQuery } from "@/store/api/splits/bonus-transactions";
 import { BonusTransaction } from "@/types/response-types";
-import { ViewDetailsModal } from "./ViewDetailsModal";
+import { Eye, FileImage, Loader2, Paperclip } from "lucide-react";
+import { useState } from "react";
 import { AddSlipModal } from "./AddSlipModal";
+import { ViewDetailsModal } from "./ViewDetailsModal";
 import { ViewSlipModal } from "./ViewSlipModal";
 
 export default function BonusTransactionsList() {
@@ -115,7 +115,7 @@ export default function BonusTransactionsList() {
 
                       {/* Reward count */}
                       <TableCell className="px-4 py-3 text-center">
-                        <span className="inline-flex items-center justify-center h-7 min-w-[1.75rem] rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs font-semibold px-2">
+                        <span className="inline-flex items-center justify-center h-7 min-w-7 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs font-semibold px-2">
                           {tx.rewardCount}
                         </span>
                       </TableCell>

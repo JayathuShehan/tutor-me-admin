@@ -78,8 +78,10 @@ export const updateTutorSchema = z
       .min(1, "Select at least one subject")
       .optional(),
 
-    nationality: z.enum(NATIONALITY_VALUES).optional(),
-    race: z.enum(RACE_VALUES).optional(),
+    // Nullable so an admin can explicitly clear a previously-saved value: null
+    // is sent to the API (and persists), whereas undefined is dropped on submit.
+    nationality: z.enum(NATIONALITY_VALUES).nullable().optional(),
+    race: z.enum(RACE_VALUES).nullable().optional(),
 
     status: z.enum(TUTOR_STATUS_VALUES).optional(),
 
@@ -98,7 +100,7 @@ export const updateTutorSchema = z
     yearsExperience: z
       .number()
       .int()
-      .min(1, "Years of Experience are required")
+      .min(0, "Years of Experience are required")
       .max(50)
       .optional(),
 

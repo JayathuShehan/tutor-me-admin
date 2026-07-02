@@ -119,7 +119,7 @@ export default function RefereesList() {
       align: "center",
       className: "min-w-[110px] max-w-[130px]",
       render: (row) => (
-        <span className="inline-flex items-center justify-center h-7 min-w-[1.75rem] rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs font-semibold px-2">
+        <span className="inline-flex items-center justify-center h-7 min-w-7 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs font-semibold px-2">
           {row.referralCount}
         </span>
       ),

@@ -1,8 +1,11 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { CERTIFICATE_TYPE_VALUES } from "@/configs/app-constants";
-import { Loader2, Plus, X } from "lucide-react";
+import {
+  MANDATORY_CERTIFICATE_TYPE_VALUES,
+  OPTIONAL_CERTIFICATE_TYPE_VALUES,
+} from "@/configs/app-constants";
+import { Eye, Loader2, Minus, Plus, X } from "lucide-react";
 import { MouseEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
 
@@ -16,10 +19,174 @@ interface NewFileItem {
   file: File;
   url?: string;
   previewUrl?: string;
+  /** Object URL created for PDF preview before/after upload; revoked on remove. */
+  blobUrl?: string;
   type: string;
 }
 
-const CERTIFICATE_TYPE_OPTIONS = [...CERTIFICATE_TYPE_VALUES];
+// Everything the preview modal needs to render a single file.
+interface PreviewData {
+  fileName: string;
+  /** Raw/remote URL (used as fallback src and for extension sniffing). */
+  url?: string;
+  /** data: URL for image previews (new uploads). */
+  previewUrl?: string;
+  /** blob: URL for PDF previews (new uploads). */
+  blobUrl?: string;
+  /** Known MIME type when available (new uploads carry the File's type). */
+  contentType?: string;
+}
+
+const isImageSource = (data: PreviewData): boolean =>
+  (data.contentType ?? "").startsWith("image/") ||
+  !!data.previewUrl ||
+  /\.(jpg|jpeg|png|gif|webp|svg|avif|bmp)(\?|$)/i.test(data.url ?? "");
+
+const isPdfSource = (data: PreviewData): boolean =>
+  (data.contentType ?? "") === "application/pdf" ||
+  /\.pdf(\?|$)/i.test(data.url ?? "");
+
+function PreviewModal({
+  data,
+  onClose,
+}: {
+  data: PreviewData;
+  onClose: () => void;
+}) {
+  const [scale, setScale] = useState(1);
+
+  const isImage = isImageSource(data);
+  const isPdf = isPdfSource(data);
+  const imageSrc = data.previewUrl ?? data.url;
+  const pdfSrc = data.blobUrl ?? data.url;
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+    >
+      <button
+        type="button"
+        onClick={onClose}
+        className="fixed right-4 top-4 z-[70] flex h-10 w-10 items-center justify-center rounded-full bg-white text-gray-700 shadow-lg transition hover:bg-red-50 hover:text-red-500 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+        title="Close preview"
+        aria-label="Close preview"
+      >
+        <X size={20} />
+      </button>
+
+      <div className="relative flex max-h-[90vh] w-[90vw] max-w-4xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl dark:bg-gray-900">
+        <div className="flex shrink-0 items-center justify-between border-b px-4 py-3 dark:border-gray-700">
+          <p className="max-w-[70%] truncate text-sm font-medium text-gray-800 dark:text-gray-100">
+            {data.fileName}
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() =>
+                setScale((s) => Math.max(0.25, +(s - 0.25).toFixed(2)))
+              }
+              className="flex h-7 w-7 items-center justify-center rounded-md border border-gray-300 text-gray-600 transition hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+              title="Zoom out"
+            >
+              <Minus size={14} />
+            </button>
+            <span className="w-10 text-center text-xs text-gray-500 dark:text-gray-400">
+              {Math.round(scale * 100)}%
+            </span>
+            <button
+              type="button"
+              onClick={() => setScale((s) => Math.min(4, +(s + 0.25).toFixed(2)))}
+              className="flex h-7 w-7 items-center justify-center rounded-md border border-gray-300 text-gray-600 transition hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+              title="Zoom in"
+            >
+              <Plus size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-7 w-7 items-center justify-center rounded-md text-gray-600 transition hover:bg-red-50 hover:text-red-500 dark:text-gray-300 dark:hover:bg-gray-700"
+              title="Close preview"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex flex-1 items-start justify-center overflow-auto bg-gray-50 p-4 dark:bg-gray-800">
+          {isImage && imageSrc && (
+            <div
+              style={{ transform: `scale(${scale})`, transformOrigin: "top center" }}
+              className="transition-transform duration-150"
+            >
+              <img
+                src={imageSrc}
+                alt={data.fileName}
+                className="max-w-full rounded shadow"
+              />
+            </div>
+          )}
+
+          {!isImage && isPdf && pdfSrc && (
+            <div
+              style={{
+                transform: `scale(${scale})`,
+                transformOrigin: "top center",
+                width: "100%",
+                height: "70vh",
+              }}
+              className="transition-transform duration-150"
+            >
+              <embed
+                src={pdfSrc}
+                type="application/pdf"
+                className="h-full w-full rounded shadow"
+              />
+            </div>
+          )}
+
+          {!isImage && !isPdf && (
+            <div className="flex flex-col items-center justify-center gap-3 py-12 text-gray-500">
+              <p className="text-sm">Preview not available for this file type.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Required (educational) document types are grouped at the top and labelled
+// "(Required)" so admins can tell them apart from optional documents. At least
+// one required document must be uploaded — enforced by the form schema.
+const renderCertificateTypeOptions = () => (
+  <>
+    <option value="" disabled>
+      Document Type
+    </option>
+    <optgroup label="Required Documents">
+      {MANDATORY_CERTIFICATE_TYPE_VALUES.map((opt) => (
+        <option key={opt} value={opt}>
+          {opt} (Required)
+        </option>
+      ))}
+    </optgroup>
+    <optgroup label="Optional Documents">
+      {OPTIONAL_CERTIFICATE_TYPE_VALUES.map((opt) => (
+        <option key={opt} value={opt}>
+          {opt}
+        </option>
+      ))}
+    </optgroup>
+  </>
+);
 
 interface SimpleUploadProps {
   mode?: "simple";
@@ -88,6 +255,8 @@ export default function MultiFileUploadDropzone(
     () => normalizeFiles(props.defaultFiles),
   );
 
+  const [previewItem, setPreviewItem] = useState<PreviewData | null>(null);
+
   useEffect(() => {
     setExistingFiles(normalizeFiles(props.defaultFiles));
   }, [props.defaultFiles]);
@@ -103,6 +272,11 @@ export default function MultiFileUploadDropzone(
       const incoming: NewFileItem[] = acceptedFiles.map((file) => ({
         file,
         type: "",
+        // Pre-build a blob URL for PDFs so they can be previewed immediately.
+        blobUrl:
+          file.type === "application/pdf"
+            ? URL.createObjectURL(file)
+            : undefined,
       }));
 
       setNewFiles((prev) => [...prev, ...incoming]);
@@ -205,13 +379,57 @@ export default function MultiFileUploadDropzone(
 
   const removeNew = (index: number, e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-    setNewFiles((prev) => prev.filter((_, i) => i !== index));
+    setNewFiles((prev) => {
+      const target = prev[index];
+      if (target?.blobUrl) URL.revokeObjectURL(target.blobUrl);
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   const updateNewType = (index: number, type: string) => {
     setNewFiles((prev) =>
       prev.map((file, i) => (i === index ? { ...file, type } : file)),
     );
+  };
+
+  // Keep a live ref of the pending files so the unmount cleanup can revoke any
+  // outstanding blob URLs without re-running on every change.
+  const newFilesRef = useRef<NewFileItem[]>(newFiles);
+  useEffect(() => {
+    newFilesRef.current = newFiles;
+  }, [newFiles]);
+
+  useEffect(() => {
+    return () => {
+      newFilesRef.current.forEach((file) => {
+        if (file.blobUrl) URL.revokeObjectURL(file.blobUrl);
+      });
+    };
+  }, []);
+
+  const previewExisting = (
+    cert: CertificateFileItem,
+    e: MouseEvent<HTMLButtonElement>,
+  ) => {
+    e.stopPropagation();
+    setPreviewItem({
+      fileName: cert.url.split("/").pop()?.split("?")[0] || "Uploaded file",
+      url: cert.url,
+    });
+  };
+
+  const previewNew = (
+    fileObj: NewFileItem,
+    e: MouseEvent<HTMLButtonElement>,
+  ) => {
+    e.stopPropagation();
+    setPreviewItem({
+      fileName: fileObj.file.name,
+      url: fileObj.url,
+      previewUrl: fileObj.previewUrl,
+      blobUrl: fileObj.blobUrl,
+      contentType: fileObj.file.type,
+    });
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -290,26 +508,30 @@ export default function MultiFileUploadDropzone(
                         onClick={(e) => e.stopPropagation()}
                         className="w-full max-w-[220px] rounded border bg-white px-2 py-1 text-xs text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
                       >
-                        <option value="" disabled>
-                          Document Type
-                        </option>
-                        {CERTIFICATE_TYPE_OPTIONS.map((opt) => (
-                          <option key={opt} value={opt}>
-                            {opt}
-                          </option>
-                        ))}
+                        {renderCertificateTypeOptions()}
                       </select>
                     )}
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={(e) => removeExisting(i, e)}
-                  className="p-2 text-gray-400 transition-colors hover:text-red-500"
-                >
-                  <X className="h-4 w-4" />
-                </button>
+                <div className="flex shrink-0 items-center">
+                  <button
+                    type="button"
+                    onClick={(e) => previewExisting(cert, e)}
+                    className="p-2 text-gray-400 transition-colors hover:text-brand-500"
+                    title="Preview file"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => removeExisting(i, e)}
+                    className="p-2 text-gray-400 transition-colors hover:text-red-500"
+                    title="Remove file"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
             );
           })}
@@ -360,29 +582,40 @@ export default function MultiFileUploadDropzone(
                       onClick={(e) => e.stopPropagation()}
                       className="w-full max-w-[220px] rounded border bg-white px-2 py-1 text-xs text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
                     >
-                      <option value="" disabled>
-                        Document Type
-                      </option>
-                      {CERTIFICATE_TYPE_OPTIONS.map((opt) => (
-                        <option key={opt} value={opt}>
-                          {opt}
-                        </option>
-                      ))}
+                      {renderCertificateTypeOptions()}
                     </select>
                   )}
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={(e) => removeNew(i, e)}
-                className="p-2 text-gray-400 transition-colors hover:text-red-500"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              <div className="flex shrink-0 items-center">
+                <button
+                  type="button"
+                  onClick={(e) => previewNew(fileObj, e)}
+                  className="p-2 text-gray-400 transition-colors hover:text-brand-500"
+                  title="Preview file"
+                >
+                  <Eye className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => removeNew(i, e)}
+                  className="p-2 text-gray-400 transition-colors hover:text-red-500"
+                  title="Remove file"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           ))}
         </div>
+      )}
+
+      {previewItem && (
+        <PreviewModal
+          data={previewItem}
+          onClose={() => setPreviewItem(null)}
+        />
       )}
     </div>
   );

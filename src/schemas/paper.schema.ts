@@ -17,9 +17,9 @@ const noExtraSpaces = (field: string) =>
 
 const paperTitle = () =>
   noExtraSpaces("Title")
-    .refine((val) => /^[\p{L}\p{N} ().&-]+$/u.test(val), {
+    .refine((val) => /^[\p{L}\p{N} ().&/-]+$/u.test(val), {
       message:
-        "Title can only include letters, numbers, spaces, dots, parentheses, hyphens, and ampersands",
+        "Title can only include letters, numbers, spaces, dots, parentheses, hyphens, ampersands, and slashes",
     })
     .refine((val) => /\p{L}/u.test(val), {
       message: "Title must include at least one letter",
