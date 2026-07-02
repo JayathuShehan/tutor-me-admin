@@ -1,10 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { Loader2 } from "lucide-react";
-import { useFetchReferralsSummaryQuery } from "@/store/api/splits/referrals";
-import { ReferralSummary } from "@/types/response-types";
-import { RewardsModal } from "./RewardsModal";
 import {
   Table,
   TableBody,
@@ -12,6 +7,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useFetchReferralsSummaryQuery } from "@/store/api/splits/referrals";
+import { ReferralSummary } from "@/types/response-types";
+import { Loader2 } from "lucide-react";
+import { useState } from "react";
+import { RewardsModal } from "./RewardsModal";
 
 export default function ReferralsList() {
   const [page, setPage] = useState(1);
@@ -92,17 +92,17 @@ export default function ReferralsList() {
                         </span>
                       </TableCell>
                       <TableCell className="px-4 py-3 text-center">
-                        <span className="inline-flex items-center justify-center h-7 min-w-[1.75rem] rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs font-semibold px-2">
+                        <span className="inline-flex items-center justify-center h-7 min-w-7 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs font-semibold px-2">
                           {referral.totalReferrals}
                         </span>
                       </TableCell>
                       <TableCell className="px-4 py-3 text-center">
                         {referral.pendingRewards > 0 ? (
-                          <span className="inline-flex items-center justify-center h-7 min-w-[1.75rem] rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-xs font-semibold px-2">
+                          <span className="inline-flex items-center justify-center h-7 min-w-7 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-xs font-semibold px-2">
                             {referral.pendingRewards}
                           </span>
                         ) : (
-                          <span className="inline-flex items-center justify-center h-7 min-w-[1.75rem] rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 text-xs font-semibold px-2">
+                          <span className="inline-flex items-center justify-center h-7 min-w-7 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 text-xs font-semibold px-2">
                             0
                           </span>
                         )}

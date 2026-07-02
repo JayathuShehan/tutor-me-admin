@@ -1085,6 +1085,7 @@ export default function TutorsList() {
               tutorId={row.id}
               tutorName={row.fullName}
               tutorEmail={row.email}
+              tutorStatus={row.status}
             />
           </div>
         ),

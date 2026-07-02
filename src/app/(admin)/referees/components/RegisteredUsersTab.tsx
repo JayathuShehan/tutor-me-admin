@@ -282,7 +282,7 @@ function RevokeReferralCode({
               <DialogTitle>Checking pending rewards…</DialogTitle>
             ) : step === "warn" ? (
               <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 mt-0.5 w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
+                <div className="shrink-0 mt-0.5 w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
                   <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                 </div>
                 <DialogTitle className="text-base pt-1">
@@ -481,7 +481,7 @@ export function RegisteredUsersTab() {
       align: "center",
       className: "min-w-[110px] max-w-[130px]",
       render: (row) => (
-        <span className="inline-flex items-center justify-center h-7 min-w-[1.75rem] rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs font-semibold px-2">
+        <span className="inline-flex items-center justify-center h-7 min-w-7 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs font-semibold px-2">
           {getReferralCount(row)}
         </span>
       ),

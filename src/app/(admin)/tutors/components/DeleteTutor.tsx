@@ -66,6 +66,7 @@ interface DeleteTutorProps {
   tutorId: string;
   tutorName?: string;
   tutorEmail?: string;
+  tutorStatus?: string;
 }
 
 const LARGE_LIMIT = 10000;
@@ -341,7 +342,9 @@ export function DeleteTutor({
   tutorId,
   tutorName,
   tutorEmail,
+  tutorStatus,
 }: DeleteTutorProps) {
+  const isLocked = tutorStatus?.toLowerCase() === "approved";
   const [deleteTutor, { isLoading: isDeleting }] = useDeleteTutorMutation();
   const [unassignTutor] = useUnassignTutorMutation();
   const [loadRequests] = useLazyFetchRequestForTutorsQuery();
@@ -440,6 +443,7 @@ export function DeleteTutor({
   };
 
   const handleDeleteClick = async () => {
+    if (isLocked) return;
     setCheckingAssignments(true);
 
     try {
@@ -525,14 +529,24 @@ export function DeleteTutor({
       <button
         type="button"
         onClick={handleDeleteClick}
-        disabled={checkingAssignments || isDeleting}
+        disabled={isLocked || checkingAssignments || isDeleting}
         className="inline-flex items-center justify-center border-0 bg-transparent p-0 disabled:cursor-not-allowed disabled:opacity-50"
-        title="Delete tutor"
+        title={
+          isLocked
+            ? "Approved tutors are locked from deletion to protect referral data"
+            : "Delete tutor"
+        }
       >
         {checkingAssignments ? (
           <Loader2 className="h-4 w-4 animate-spin text-red-500" />
         ) : (
-          <Trash2 className="cursor-pointer text-red-500 hover:text-red-600" />
+          <Trash2
+            className={
+              isLocked
+                ? "text-gray-300 dark:text-gray-600"
+                : "cursor-pointer text-red-500 hover:text-red-600"
+            }
+          />
         )}
       </button>
 

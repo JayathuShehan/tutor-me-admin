@@ -112,7 +112,6 @@ export const TUTOR_TYPE_VALUES = [
   "International School Teacher",
   "Government School Teacher",
   "University Student",
-  "A/L Student",
   "Diploma Holder",
   "Part-time Tutor",
   "Full-time Tutor",
@@ -205,6 +204,30 @@ export const CERTIFICATE_TYPE_VALUES = [
   "Others",
 ] as const;
 export type CertificateTypeValue = (typeof CERTIFICATE_TYPE_VALUES)[number];
+
+// Educational/qualification documents are mandatory — a tutor cannot be created
+// without uploading at least one of these. Identity/supporting documents below
+// are optional. Mirrors the public tutor-registration form.
+export const MANDATORY_CERTIFICATE_TYPE_VALUES = [
+  "Degree Certificate",
+  "A/L Certificate",
+  "O/L Certificate",
+  "Professional Certificate",
+  "Teaching Certificate",
+] as const satisfies readonly CertificateTypeValue[];
+
+export const OPTIONAL_CERTIFICATE_TYPE_VALUES = [
+  "NIC",
+  "Passport",
+  "Others",
+] as const satisfies readonly CertificateTypeValue[];
+
+const MANDATORY_CERTIFICATE_TYPE_SET = new Set<string>(
+  MANDATORY_CERTIFICATE_TYPE_VALUES,
+);
+
+export const isMandatoryCertificateType = (type: string): boolean =>
+  MANDATORY_CERTIFICATE_TYPE_SET.has(type.trim());
 
 // ─── Blog / Article Status ────────────────────────────────────────────────────
 
