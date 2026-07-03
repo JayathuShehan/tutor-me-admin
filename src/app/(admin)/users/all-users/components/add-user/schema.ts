@@ -2,7 +2,12 @@ import { USER_ROLE_VALUES, USER_STATUS_VALUES } from "@/configs/app-constants";
 import { z } from "zod";
 
 export const createUserSchema = z.object({
-  email: z.string().email("Invalid email address").max(100, "Email too long"),
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email("Invalid email address")
+    .max(100, "Email too long"),
   password: z
     .string()
     .min(8, "Password must be at least 8 characters long")
