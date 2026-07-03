@@ -16,7 +16,12 @@ const parseBirthday = (value: string | Date) => {
 };
 
 export const updateUserSchema = z.object({
-  email: z.string().email("Invalid email address").max(100, "Email too long"),
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email("Invalid email address")
+    .max(100, "Email too long"),
 
   name: z
     .string()
