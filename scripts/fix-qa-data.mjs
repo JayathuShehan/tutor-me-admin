@@ -285,14 +285,12 @@ async function main() {
               `         template: uni=${template.universityStudentsRate?.minimumRate}-${template.universityStudentsRate?.maximumRate}, part=${template.partTimeTutorRate?.minimumRate}-${template.partTimeTutorRate?.maximumRate}, full=${template.fullTimeTutorRate?.minimumRate}-${template.fullTimeTutorRate?.maximumRate}, moe=${template.moeTeacherRate?.minimumRate}-${template.moeTeacherRate?.maximumRate}`,
             );
           } else {
-            await db
-              .collection(rateCol)
-              .updateOne(
-                { _id: existing._id },
-                {
-                  $set: { ...rateValuesFrom(template), updatedAt: new Date() },
-                },
-              );
+            await db.collection(rateCol).updateOne(
+              { _id: existing._id },
+              {
+                $set: { ...rateValuesFrom(template), updatedAt: new Date() },
+              },
+            );
             console.log(
               `  [UPD] "${grade.title} / ${subTitle}" — filled from template`,
             );
