@@ -105,9 +105,12 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = async () => {
-    await handleUserLogout();
-    setUser(null);
-    router.push("/signin");
+    try {
+      await handleUserLogout();
+    } finally {
+      setUser(null);
+      router.push("/signin");
+    }
   };
 
   return (
