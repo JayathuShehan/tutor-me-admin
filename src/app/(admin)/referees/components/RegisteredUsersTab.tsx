@@ -54,20 +54,15 @@ function EditBankDetails({ user }: { user: Users }) {
   const [open, setOpen] = useState(false);
   const [updateUser, { isLoading }] = useUpdateUserMutation();
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    setValue,
-    formState,
-  } = useForm<BankFormValues>({
-    mode: "onBlur",
-    defaultValues: {
-      accountName: user.accountName ?? "",
-      accountNumber: user.accountNumber ?? "",
-      bankName: user.bankName ?? "",
-    },
-  });
+  const { register, handleSubmit, reset, setValue, formState } =
+    useForm<BankFormValues>({
+      mode: "onBlur",
+      defaultValues: {
+        accountName: user.accountName ?? "",
+        accountNumber: user.accountNumber ?? "",
+        bankName: user.bankName ?? "",
+      },
+    });
 
   const handleOpen = () => {
     reset({
@@ -309,8 +304,8 @@ function RevokeReferralCode({
                   </p>
                   <p className="mt-1 text-amber-700 dark:text-amber-400">
                     This referral code cannot be revoked while pending rewards
-                    remain. Please go to the <strong>Referrals</strong> page
-                    and settle all pending rewards first.
+                    remain. Please go to the <strong>Referrals</strong> page and
+                    settle all pending rewards first.
                   </p>
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -387,8 +382,7 @@ export function RegisteredUsersTab() {
     return { countMap, pendingMap };
   }, [summariesData]);
 
-  const getReferralCount = (user: Users) =>
-    countMap.get(referrerId(user)) ?? 0;
+  const getReferralCount = (user: Users) => countMap.get(referrerId(user)) ?? 0;
 
   const getPendingRewards = (user: Users) =>
     pendingMap.get(referrerId(user)) ?? 0;
@@ -496,7 +490,10 @@ export function RegisteredUsersTab() {
         <div className="flex justify-center items-center gap-2">
           <ViewUserAsReferee user={row} referralCount={getReferralCount(row)} />
           <EditBankDetails user={row} />
-          <RevokeReferralCode user={row} pendingRewards={getPendingRewards(row)} />
+          <RevokeReferralCode
+            user={row}
+            pendingRewards={getPendingRewards(row)}
+          />
         </div>
       ),
     },

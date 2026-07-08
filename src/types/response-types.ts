@@ -194,30 +194,15 @@ export type UserRegisterResponse = {
     status: "active";
     isEmailVerified: false;
   };
-  tokens: {
-    access: {
-      token: string;
-      expires: string;
-    };
-    refresh: {
-      token: string;
-      expires: string;
-    };
-  };
 };
 
 export type UserLoginResponse = {
   user: UserBase;
-  tokens: {
-    access: {
-      token: string;
-      expires: string;
-    };
-    refresh: {
-      token: string;
-      expires: string;
-    };
-  };
+  requirePasswordChange?: boolean;
+};
+
+export type MeResponse = {
+  user: UserBase;
 };
 
 export type TuitionAssignment = {
@@ -266,17 +251,6 @@ export type UpdatePasswordResponse = {
 
 export type ForgotPasswordResponse = {
   message: string;
-};
-
-export type TokenResponse = {
-  access: {
-    token: string;
-    expires: string;
-  };
-  refresh: {
-    token: string;
-    expires: string;
-  };
 };
 
 type PersonalInfo = {

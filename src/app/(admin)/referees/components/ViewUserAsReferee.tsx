@@ -83,10 +83,7 @@ export function ViewUserAsReferee({ user, referralCount }: Props) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Eye
-          cursor="pointer"
-          className="text-blue-500 hover:text-blue-700"
-        />
+        <Eye cursor="pointer" className="text-blue-500 hover:text-blue-700" />
       </DialogTrigger>
 
       <DialogContent
@@ -96,7 +93,9 @@ export function ViewUserAsReferee({ user, referralCount }: Props) {
         <DialogHeader className="shrink-0 flex-row items-start justify-between bg-white dark:bg-gray-800 px-6 py-4 border-b z-40">
           <div className="space-y-2 text-left">
             <DialogTitle>Details</DialogTitle>
-            <DialogDescription>Registered User — Referee Details</DialogDescription>
+            <DialogDescription>
+              Registered User — Referee Details
+            </DialogDescription>
           </div>
           <DialogClose asChild>
             <button
@@ -127,7 +126,11 @@ export function ViewUserAsReferee({ user, referralCount }: Props) {
 
             <div className="grid gap-3">
               <Label>Name</Label>
-              <CopyableField label="Name" value={user.name} className={cn(fieldClass)} />
+              <CopyableField
+                label="Name"
+                value={user.name}
+                className={cn(fieldClass)}
+              />
             </div>
 
             <div className="grid gap-3">

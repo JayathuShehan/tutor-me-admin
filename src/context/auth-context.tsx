@@ -1,19 +1,24 @@
 "use client";
 
 import { LoginSchema } from "@/components/auth/form-sign-in/schema";
-import { useLoginMutation, useLogoutMutation } from "@/store/api/splits/auth";
-import { AuthUserData, Tokens } from "@/types/auth-types";
+import {
+  useLazyMeQuery,
+  useLoginMutation,
+  useLogoutMutation,
+} from "@/store/api/splits/auth";
+import { AuthUserData } from "@/types/auth-types";
 import { UserLoginResponse } from "@/types/response-types";
 import { getErrorInApiResult } from "@/utils/api";
-import { isSessionValid } from "@/utils/auth";
-import {
-  getLocalStorageItem,
-  LocalStorageKey,
-  removeLocalStorageItem,
-  setLocalStorageItem,
-} from "@/utils/local-storage";
 import { useRouter } from "next/navigation";
 import { createContext, ReactNode, useEffect, useState } from "react";
+
+const toAuthUserData = (user: UserLoginResponse["user"]): AuthUserData => ({
+  id: user.id,
+  role: user.role,
+  name: user.name,
+  email: user.email,
+  status: user.status,
+});
 
 export type AuthProviderType = {
   user: AuthUserData | null;
@@ -58,26 +63,18 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [handleUserLogin, { isLoading }] = useLoginMutation();
   const [handleUserLogout, { isLoading: isUserLogoutLoading }] =
     useLogoutMutation();
+  const [fetchCurrentUser] = useLazyMeQuery();
 
   useEffect(() => {
-    // Validate that the stored refresh token is still valid.
-    // If the session has expired, clear stale credentials so the
-    // ProtectedRoute guard will redirect the user to /signin.
-    if (!isSessionValid()) {
-      removeLocalStorageItem(LocalStorageKey.USER_DATA);
-      removeLocalStorageItem(LocalStorageKey.TOKENS);
+    const bootstrapSession = async () => {
+      const result = await fetchCurrentUser();
+      if (result.data?.user && result.data.user.role === "admin") {
+        setUser(toAuthUserData(result.data.user));
+      }
       setIsUserLoaded(true);
-      return;
-    }
-
-    const existingUserData = getLocalStorageItem<AuthUserData>(
-      LocalStorageKey.USER_DATA,
-    );
-    if (existingUserData) {
-      setUser(existingUserData);
-    }
-    setIsUserLoaded(true);
-  }, []);
+    };
+    bootstrapSession();
+  }, [fetchCurrentUser]);
 
   const login = async (credentials: LoginSchema) => {
     const result = await handleUserLogin(credentials);
@@ -87,51 +84,33 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     if (result.data) {
-      handleLoginSuccess(result.data);
+      await handleLoginSuccess(result.data);
     }
   };
 
-  const handleLoginSuccess = ({ user, tokens }: UserLoginResponse) => {
+  const handleLoginSuccess = async ({ user }: UserLoginResponse) => {
     if (user.role !== "admin") {
-      removeLocalStorageItem(LocalStorageKey.TOKENS);
+      // A session was established server-side even though this account can't
+      // use the admin panel — destroy it rather than leaving it dangling.
+      await handleUserLogout();
       setIsAuthError(
         "Access denied: You do not have permission to view this panel.",
       );
       return;
     }
 
-    const userData: AuthUserData = {
-      id: user.id,
-      role: user.role,
-      name: user.name,
-      email: user.email,
-      status: user.status,
-    };
-
-    setLocalStorageItem(LocalStorageKey.USER_DATA, userData);
-    setLocalStorageItem(LocalStorageKey.TOKENS, tokens);
-    setUser(user);
+    setUser(toAuthUserData(user));
 
     router.push("/");
   };
 
   const logout = async () => {
-    const tokens = getLocalStorageItem<LocalStorageKey.TOKENS>(
-      LocalStorageKey.TOKENS,
-    ) as unknown as Tokens;
-    if (!tokens) return;
-
-    const existingRefreshToken = tokens.refresh.token;
-
-    await handleUserLogout({
-      refreshToken: existingRefreshToken,
-    });
-
-    removeLocalStorageItem(LocalStorageKey.USER_DATA);
-    removeLocalStorageItem(LocalStorageKey.TOKENS);
-    localStorage.clear();
-
-    router.push("/signin");
+    try {
+      await handleUserLogout();
+    } finally {
+      setUser(null);
+      router.push("/signin");
+    }
   };
 
   return (

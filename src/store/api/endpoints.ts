@@ -2,7 +2,7 @@ export const Endpoints = {
   Register: "/v1/auth/register",
   Login: "/v1/auth/login",
   Logout: "/v1/auth/logout",
-  RefreshToken: "/v1/auth/refresh-tokens",
+  Me: "/v1/auth/me",
   ResetPassword: "/v1/auth/reset-password",
   ForgotPassword: "/v1/auth/forgot-password",
   ContactUs: "/v1/inquiries",

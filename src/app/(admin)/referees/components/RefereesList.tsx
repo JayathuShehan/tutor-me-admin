@@ -1,12 +1,7 @@
 "use client";
 
 import DataTable, { Column } from "@/components/tables/DataTable";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TABLE_CONFIG } from "@/configs/table";
 import { useFetchRefereesQuery } from "@/store/api/splits/referees";
 import { Referee } from "@/types/response-types";

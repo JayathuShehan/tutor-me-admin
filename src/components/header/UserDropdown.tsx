@@ -11,7 +11,7 @@ import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 
 export default function UserDropdown() {
-  const { user: authUser, logout } = useAuthContext();
+  const { user: authUser, logout, isUserLogoutLoading } = useAuthContext();
   const pathname = usePathname();
   const isProfileActive = pathname === "/profile";
   const [isOpen, setIsOpen] = useState(false);
@@ -49,9 +49,10 @@ export default function UserDropdown() {
     setIsModalOpen(true);
   };
 
-  const handleSignOutConfirm = () => {
-    logout();
-    setIsModalOpen(false);
+  const handleSignOutConfirm = async () => {
+    // logout() redirects to /signin once it settles (success or failure),
+    // which unmounts this component — no need to manually close the modal.
+    await logout();
   };
 
   return (
@@ -161,6 +162,7 @@ export default function UserDropdown() {
 
       <SignOutConfirmationModal
         isOpen={isModalOpen}
+        isLoading={isUserLogoutLoading}
         onClose={() => setIsModalOpen(false)}
         onConfirm={handleSignOutConfirm}
       />
