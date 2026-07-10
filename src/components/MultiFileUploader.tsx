@@ -69,9 +69,7 @@ function PreviewModal({
   }, [onClose]);
 
   return (
-    <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm"
-    >
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm">
       <button
         type="button"
         onClick={onClose}
@@ -103,7 +101,9 @@ function PreviewModal({
             </span>
             <button
               type="button"
-              onClick={() => setScale((s) => Math.min(4, +(s + 0.25).toFixed(2)))}
+              onClick={() =>
+                setScale((s) => Math.min(4, +(s + 0.25).toFixed(2)))
+              }
               className="flex h-7 w-7 items-center justify-center rounded-md border border-gray-300 text-gray-600 transition hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
               title="Zoom in"
             >
@@ -123,7 +123,10 @@ function PreviewModal({
         <div className="flex flex-1 items-start justify-center overflow-auto bg-gray-50 p-4 dark:bg-gray-800">
           {isImage && imageSrc && (
             <div
-              style={{ transform: `scale(${scale})`, transformOrigin: "top center" }}
+              style={{
+                transform: `scale(${scale})`,
+                transformOrigin: "top center",
+              }}
               className="transition-transform duration-150"
             >
               <img
@@ -154,7 +157,9 @@ function PreviewModal({
 
           {!isImage && !isPdf && (
             <div className="flex flex-col items-center justify-center gap-3 py-12 text-gray-500">
-              <p className="text-sm">Preview not available for this file type.</p>
+              <p className="text-sm">
+                Preview not available for this file type.
+              </p>
             </div>
           )}
         </div>
@@ -612,10 +617,7 @@ export default function MultiFileUploadDropzone(
       )}
 
       {previewItem && (
-        <PreviewModal
-          data={previewItem}
-          onClose={() => setPreviewItem(null)}
-        />
+        <PreviewModal data={previewItem} onClose={() => setPreviewItem(null)} />
       )}
     </div>
   );

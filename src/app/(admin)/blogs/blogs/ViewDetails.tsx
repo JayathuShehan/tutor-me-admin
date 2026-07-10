@@ -306,12 +306,10 @@ export function BlogDetails({ blog }: BlogDetailsProps) {
                       <button
                         type="button"
                         onClick={() =>
-                          document
-                            .getElementById(entry.id)
-                            ?.scrollIntoView({
-                              behavior: "smooth",
-                              block: "start",
-                            })
+                          document.getElementById(entry.id)?.scrollIntoView({
+                            behavior: "smooth",
+                            block: "start",
+                          })
                         }
                         className="text-left text-sm text-brand-500 dark:text-brand-400 transition-colors hover:text-brand-600 dark:hover:text-brand-300"
                       >

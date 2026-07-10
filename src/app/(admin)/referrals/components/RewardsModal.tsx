@@ -44,7 +44,11 @@ export function RewardsModal({ referrer, onClose }: RewardsModalProps) {
 
   // Bug fix: pass effectiveSent (current displayed state), not reward.rewardSent
   // (original server state), so the toggle actually flips from the visible value.
-  const handleToggle = (rewardId: string, effectiveCurrent: boolean, locked: boolean) => {
+  const handleToggle = (
+    rewardId: string,
+    effectiveCurrent: boolean,
+    locked: boolean,
+  ) => {
     if (locked) return;
     setPendingUpdates((prev) => ({
       ...prev,
@@ -121,7 +125,8 @@ export function RewardsModal({ referrer, onClose }: RewardsModalProps) {
   const selectedToSendCount = pendingUpdateEntries.filter(
     ([, v]) => v === true,
   ).length;
-  const belowMinimum = hasPendingChanges && selectedToSendCount < MIN_BATCH_SIZE;
+  const belowMinimum =
+    hasPendingChanges && selectedToSendCount < MIN_BATCH_SIZE;
 
   return createPortal(
     <div

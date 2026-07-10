@@ -13,9 +13,10 @@ const hasPhysicalClassType = (classTypes: string[] = []) =>
     classType.toLowerCase().startsWith("physical"),
   );
 
-const hasMandatoryCertificate = (
-  certificates: { type: string }[] = [],
-) => certificates.some((certificate) => isMandatoryCertificateType(certificate.type));
+const hasMandatoryCertificate = (certificates: { type: string }[] = []) =>
+  certificates.some((certificate) =>
+    isMandatoryCertificateType(certificate.type),
+  );
 
 export const addTutorSchema = z
   .object({
