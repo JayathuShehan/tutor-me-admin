@@ -54,7 +54,9 @@ export function AddSlipModal({ transactionId, onClose }: Props) {
     // specific message instead of a timeout after several retries.
     const estimatedPayloadBytes = Math.ceil((base64.length * 3) / 4);
     if (estimatedPayloadBytes > MAX_MB * 1024 * 1024) {
-      toast.error(`File is too large. Please upload a file under ${MAX_MB} MB.`);
+      toast.error(
+        `File is too large. Please upload a file under ${MAX_MB} MB.`,
+      );
       return;
     }
 
@@ -68,12 +70,16 @@ export function AddSlipModal({ transactionId, onClose }: Props) {
     if ("error" in result) {
       const err = result.error as FetchBaseQueryError;
       if (err.status === 413) {
-        toast.error(`File is too large. Please upload a file under ${MAX_MB} MB.`);
+        toast.error(
+          `File is too large. Please upload a file under ${MAX_MB} MB.`,
+        );
       } else if (
         err.status === "FETCH_ERROR" ||
         err.status === "TIMEOUT_ERROR"
       ) {
-        toast.error("Upload failed. The file may be too large or the connection was lost.");
+        toast.error(
+          "Upload failed. The file may be too large or the connection was lost.",
+        );
       } else if (
         typeof err.status === "number" &&
         "data" in err &&

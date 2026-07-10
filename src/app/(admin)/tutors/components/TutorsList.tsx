@@ -29,8 +29,8 @@ import {
   useFetchTutorsQuery,
   useUpdateTutorStatusMutation,
 } from "@/store/api/splits/tutors";
+import { useAuthContext } from "@/context";
 import { getErrorInApiResult } from "@/utils/api";
-import { getAdminId } from "@/utils/auth";
 import { sortBySchoolGradeOrder } from "@/utils/grade-filter-order";
 import {
   ArrowDown,
@@ -334,9 +334,10 @@ function RejectDialog({
 }) {
   const [updateTutorStatus, { isLoading }] = useUpdateTutorStatusMutation();
   const [message, setMessage] = useState("");
+  const { user } = useAuthContext();
 
   const handleReject = async () => {
-    const adminId = getAdminId();
+    const adminId = user?.id ? String(user.id) : undefined;
     const result = await updateTutorStatus({
       id: tutor.id,
       status: "rejected",
@@ -427,9 +428,10 @@ function SuspendDialog({
   onClose: () => void;
 }) {
   const [updateTutorStatus, { isLoading }] = useUpdateTutorStatusMutation();
+  const { user } = useAuthContext();
 
   const handleSuspend = async () => {
-    const adminId = getAdminId();
+    const adminId = user?.id ? String(user.id) : undefined;
     const result = await updateTutorStatus({
       id: tutor.id,
       status: "suspended",
@@ -506,6 +508,7 @@ function SuspendDialog({
 function TutorStatusActions({ tutor }: { tutor: Tutor }) {
   const [updateTutorStatus, { isLoading: isApproving }] =
     useUpdateTutorStatusMutation();
+  const { user } = useAuthContext();
 
   const [showReject, setShowReject] = useState(false);
   const [showSuspend, setShowSuspend] = useState(false);
@@ -578,7 +581,7 @@ function TutorStatusActions({ tutor }: { tutor: Tutor }) {
 
   const handleApprove = async () => {
     setDropdownOpen(false);
-    const adminId = getAdminId();
+    const adminId = user?.id ? String(user.id) : undefined;
     const result = await updateTutorStatus({
       id: tutor.id,
       status: "approved",
@@ -702,6 +705,7 @@ function TutorStatusActions({ tutor }: { tutor: Tutor }) {
 // ─── Main list ────────────────────────────────────────────────────────────────
 
 export default function TutorsList() {
+  const { user } = useAuthContext();
   const [page, setPage] = useState<number>(TABLE_CONFIG.DEFAULT_PAGE);
   const [deleteTutor] = useDeleteTutorMutation();
   const [updateTutorStatus] = useUpdateTutorStatusMutation();
@@ -1282,7 +1286,7 @@ export default function TutorsList() {
             updateTutorStatus({
               id: row.id,
               status,
-              adminId: getAdminId(),
+              adminId: user?.id ? String(user.id) : undefined,
             }).unwrap(),
         }}
       />

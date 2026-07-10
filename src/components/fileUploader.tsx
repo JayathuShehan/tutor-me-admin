@@ -149,14 +149,15 @@ export default function FileUploadDropzone({
               : "Click or drag a file here to upload"}
           </p>
 
-          {uploadError && (
-            <p className="text-sm text-red-500">{uploadError}</p>
-          )}
+          {uploadError && <p className="text-sm text-red-500">{uploadError}</p>}
 
           {fileName && (
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); removeFile(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                removeFile();
+              }}
               className="text-xs text-red-500 hover:text-red-700"
               aria-label="Remove uploaded file"
             >
