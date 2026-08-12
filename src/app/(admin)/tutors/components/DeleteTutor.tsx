@@ -238,7 +238,7 @@ function AssignedRequestsModal({
                       isHeader
                       className="w-[210px] px-5 py-3 text-left text-xs font-semibold uppercase text-brand-700 dark:text-brand-300"
                     >
-                      Requests For Tutors Email
+                      Find a Tutor Email
                     </TableCell>
                     <TableCell
                       isHeader
