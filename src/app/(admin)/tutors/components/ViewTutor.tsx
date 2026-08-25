@@ -15,8 +15,8 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useFetchGradesQuery } from "@/store/api/splits/grades";
-import { Copy, Eye } from "lucide-react";
-import { useMemo, useState } from "react";
+import { AlertTriangle, Copy, Download, Eye } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
 type ArrayItem =
@@ -118,6 +118,79 @@ function CopyableDisplayField({
   );
 }
 
+// Formats browsers cannot decode in <img> (HEIC/HEIF are the iPhone camera defaults).
+const UNPREVIEWABLE_IMAGE_FORMATS = ["heic", "heif"];
+
+type CertificateSource =
+  | { kind: "empty" }
+  | { kind: "pdf" }
+  | { kind: "image" }
+  | { kind: "unpreviewable"; format: string };
+
+function describeCertificateSource(url: string): CertificateSource {
+  const trimmed = url.trim();
+  if (!trimmed) return { kind: "empty" };
+
+  if (/^data:/i.test(trimmed)) {
+    const commaIndex = trimmed.indexOf(",");
+    // A data URL with nothing after the comma carries no file at all.
+    if (commaIndex === -1 || commaIndex === trimmed.length - 1)
+      return { kind: "empty" };
+
+    const mimeType = trimmed.slice(5, commaIndex).split(";")[0].toLowerCase();
+    if (mimeType === "application/pdf") return { kind: "pdf" };
+
+    const subtype = mimeType.split("/")[1] ?? "";
+    if (UNPREVIEWABLE_IMAGE_FORMATS.includes(subtype))
+      return { kind: "unpreviewable", format: subtype.toUpperCase() };
+    return { kind: "image" };
+  }
+
+  const pathname = trimmed.split(/[?#]/)[0].toLowerCase();
+  if (pathname.endsWith(".pdf")) return { kind: "pdf" };
+
+  const extension = pathname.split(".").pop() ?? "";
+  if (UNPREVIEWABLE_IMAGE_FORMATS.includes(extension))
+    return { kind: "unpreviewable", format: extension.toUpperCase() };
+  return { kind: "image" };
+}
+
+function CertificateFallback({
+  title,
+  description,
+  downloadUrl,
+}: {
+  title: string;
+  description: string;
+  downloadUrl?: string;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-3 px-6 text-center">
+      <AlertTriangle className="h-10 w-10 text-gray-400" />
+      <div>
+        <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+          {title}
+        </p>
+        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          {description}
+        </p>
+      </div>
+      {downloadUrl && (
+        <a
+          href={downloadUrl}
+          download
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+        >
+          <Download className="h-3.5 w-3.5" />
+          Download file
+        </a>
+      )}
+    </div>
+  );
+}
+
 function CertificateViewer({
   url,
   isOpen,
@@ -128,10 +201,24 @@ function CertificateViewer({
   onClose: () => void;
 }) {
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+
+  // The dialog stays mounted between openings, so reset per certificate.
+  useEffect(() => {
+    setLoading(true);
+    setFailed(false);
+  }, [url]);
 
   if (!url) return null;
 
-  const isPdf = url.toLowerCase().endsWith(".pdf");
+  const source = describeCertificateSource(url);
+  const isPreviewable =
+    !failed && (source.kind === "pdf" || source.kind === "image");
+
+  const handleFailure = () => {
+    setFailed(true);
+    setLoading(false);
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -143,16 +230,34 @@ function CertificateViewer({
           <DialogTitle>Certificate Viewer</DialogTitle>
         </DialogHeader>
         <div className="flex-1 relative w-full h-full bg-gray-100 rounded-md overflow-hidden flex items-center justify-center">
-          {loading && (
+          {loading && isPreviewable && (
             <div className="absolute inset-0 flex items-center justify-center z-10 bg-gray-100/50">
               <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
             </div>
           )}
-          {isPdf ? (
+          {failed ? (
+            <CertificateFallback
+              title="Couldn't load this certificate"
+              description="The file may be corrupted or no longer available."
+              downloadUrl={url}
+            />
+          ) : source.kind === "empty" ? (
+            <CertificateFallback
+              title="No file was uploaded"
+              description="This certificate has no file attached. Ask the tutor to upload it again."
+            />
+          ) : source.kind === "unpreviewable" ? (
+            <CertificateFallback
+              title={`${source.format} files can't be previewed`}
+              description="Your browser cannot display this format. Download the file to open it."
+              downloadUrl={url}
+            />
+          ) : source.kind === "pdf" ? (
             <iframe
               src={url}
               className="w-full h-full"
               onLoad={() => setLoading(false)}
+              onError={handleFailure}
               title="Certificate PDF"
             />
           ) : (
@@ -161,6 +266,7 @@ function CertificateViewer({
               alt="Certificate"
               className="max-w-full max-h-full object-contain"
               onLoad={() => setLoading(false)}
+              onError={handleFailure}
             />
           )}
         </div>
@@ -534,20 +640,25 @@ export function ViewTutor({ tutor }: ViewTutorProps) {
                   {certificates.length === 0 ? (
                     <div className={displayFieldClass}>N/A</div>
                   ) : (
-                    certificates.map((cert, idx) => (
-                      <Button
-                        key={idx}
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setSelectedCert(cert.url)}
-                        className="flex items-center gap-1"
-                      >
-                        <span className="text-xs font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
-                          {cert.type}
-                        </span>
-                        <span>View</span>
-                      </Button>
-                    ))
+                    certificates.map((cert, idx) => {
+                      const hasFile = cert.url.trim() !== "";
+                      return (
+                        <Button
+                          key={idx}
+                          size="sm"
+                          variant="outline"
+                          disabled={!hasFile}
+                          onClick={() => setSelectedCert(cert.url)}
+                          className="flex items-center gap-1"
+                          title={hasFile ? undefined : "No file was uploaded"}
+                        >
+                          <span className="text-xs font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                            {cert.type}
+                          </span>
+                          <span>{hasFile ? "View" : "No file"}</span>
+                        </Button>
+                      );
+                    })
                   )}
                 </div>
               </div>
