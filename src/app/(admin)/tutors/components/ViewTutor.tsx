@@ -118,8 +118,11 @@ function CopyableDisplayField({
   );
 }
 
-// Formats browsers cannot decode in <img> (HEIC/HEIF are the iPhone camera defaults).
-const UNPREVIEWABLE_IMAGE_FORMATS = ["heic", "heif"];
+// Formats browsers cannot decode in <img>.
+// HEIC/HEIF are the iPhone camera defaults; TIFF is a common scanner/fax output.
+const HEIC_FORMATS = ["heic", "heif"];
+const TIFF_FORMATS = ["tif", "tiff"];
+const UNPREVIEWABLE_IMAGE_FORMATS = [...HEIC_FORMATS, ...TIFF_FORMATS];
 
 type CertificateSource =
   | { kind: "empty" }
@@ -153,6 +156,67 @@ function describeCertificateSource(url: string): CertificateSource {
   if (UNPREVIEWABLE_IMAGE_FORMATS.includes(extension))
     return { kind: "unpreviewable", format: extension.toUpperCase() };
   return { kind: "image" };
+}
+
+// No browser can decode HEIC/HEIF natively, so we convert it to a JPEG blob
+// in-browser (via a WASM libheif build) purely for previewing.
+async function convertHeicForPreview(url: string): Promise<string> {
+  const heic2any = (await import("heic2any")).default;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Failed to fetch source file: ${response.status}`);
+  const sourceBlob = await response.blob();
+  const converted = await heic2any({
+    blob: sourceBlob,
+    toType: "image/jpeg",
+    quality: 0.85,
+  });
+  const resultBlob = Array.isArray(converted) ? converted[0] : converted;
+  return URL.createObjectURL(resultBlob);
+}
+
+// No browser can decode TIFF natively either. UTIF.js decodes it to raw RGBA
+// pixels, which we paint onto a canvas and re-export as a PNG blob.
+async function convertTiffForPreview(url: string): Promise<string> {
+  const UTIF = (await import("utif")).default;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Failed to fetch source file: ${response.status}`);
+  const buffer = await response.arrayBuffer();
+
+  const ifds = UTIF.decode(buffer);
+  const ifd = ifds[0];
+  if (!ifd) throw new Error("No image found in TIFF file");
+  UTIF.decodeImage(buffer, ifd, ifds);
+
+  const width = ifd.width ?? 0;
+  const height = ifd.height ?? 0;
+  if (!width || !height) throw new Error("Could not read TIFF dimensions");
+
+  const rgba = UTIF.toRGBA8(ifd);
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas 2D context unavailable");
+  ctx.putImageData(new ImageData(new Uint8ClampedArray(rgba), width, height), 0, 0);
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        reject(new Error("Failed to encode preview image"));
+        return;
+      }
+      resolve(URL.createObjectURL(blob));
+    }, "image/png");
+  });
+}
+
+function convertUnpreviewableForPreview(
+  url: string,
+  format: string,
+): Promise<string> {
+  return TIFF_FORMATS.includes(format.toLowerCase())
+    ? convertTiffForPreview(url)
+    : convertHeicForPreview(url);
 }
 
 function CertificateFallback({
@@ -202,18 +266,57 @@ function CertificateViewer({
 }) {
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
+  const [convertedPreviewUrl, setConvertedPreviewUrl] = useState<string | null>(
+    null,
+  );
+  const [conversionFailed, setConversionFailed] = useState(false);
+
+  const source = url ? describeCertificateSource(url) : { kind: "empty" as const };
+  const converting =
+    source.kind === "unpreviewable" && !convertedPreviewUrl && !conversionFailed;
 
   // The dialog stays mounted between openings, so reset per certificate.
   useEffect(() => {
     setLoading(true);
     setFailed(false);
+    setConvertedPreviewUrl(null);
+    setConversionFailed(false);
   }, [url]);
+
+  // Convert HEIC/HEIF/TIFF certificates to a previewable image in the background.
+  const unpreviewableFormat =
+    source.kind === "unpreviewable" ? source.format : null;
+  useEffect(() => {
+    if (!url || !unpreviewableFormat) return;
+    let cancelled = false;
+    convertUnpreviewableForPreview(url, unpreviewableFormat)
+      .then((objectUrl) => {
+        if (cancelled) {
+          URL.revokeObjectURL(objectUrl);
+          return;
+        }
+        setConvertedPreviewUrl(objectUrl);
+      })
+      .catch(() => {
+        if (!cancelled) setConversionFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [url, unpreviewableFormat]);
+
+  // Release the converted blob URL once it's replaced or the viewer unmounts.
+  useEffect(() => {
+    return () => {
+      if (convertedPreviewUrl) URL.revokeObjectURL(convertedPreviewUrl);
+    };
+  }, [convertedPreviewUrl]);
 
   if (!url) return null;
 
-  const source = describeCertificateSource(url);
   const isPreviewable =
-    !failed && (source.kind === "pdf" || source.kind === "image");
+    !failed &&
+    (source.kind === "pdf" || source.kind === "image" || !!convertedPreviewUrl);
 
   const handleFailure = () => {
     setFailed(true);
@@ -247,11 +350,28 @@ function CertificateViewer({
               description="This certificate has no file attached. Ask the tutor to upload it again."
             />
           ) : source.kind === "unpreviewable" ? (
-            <CertificateFallback
-              title={`${source.format} files can't be previewed`}
-              description="Your browser cannot display this format. Download the file to open it."
-              downloadUrl={url}
-            />
+            convertedPreviewUrl ? (
+              <img
+                src={convertedPreviewUrl}
+                alt="Certificate"
+                className="max-w-full max-h-full object-contain"
+                onLoad={() => setLoading(false)}
+                onError={handleFailure}
+              />
+            ) : converting ? (
+              <div className="flex flex-col items-center gap-3 text-center">
+                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Converting {source.format} preview…
+                </p>
+              </div>
+            ) : (
+              <CertificateFallback
+                title={`${source.format} files can't be previewed`}
+                description="We couldn't generate a preview for this format. Download the file to open it."
+                downloadUrl={url}
+              />
+            )
           ) : source.kind === "pdf" ? (
             <iframe
               src={url}
