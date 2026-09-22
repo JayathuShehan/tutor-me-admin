@@ -2,7 +2,11 @@ import {
   FetchRequestForTutor,
   UpdateTutorRequestsRequest,
 } from "@/types/request-types";
-import { PaginatedResponse, RequestTutors } from "@/types/response-types";
+import {
+  GenerateTutorMatchReportResponse,
+  PaginatedResponse,
+  RequestTutors,
+} from "@/types/response-types";
 import { baseApi } from "../..";
 import { Endpoints } from "../../endpoints";
 
@@ -61,12 +65,24 @@ export const RequestTutorApi = baseApi.injectEndpoints({
       invalidatesTags: [{ type: "RequestTutor", id: "LIST" }],
     }),
 
-    generateTutorMatchReport: build.mutation<unknown, { requestId: string }>({
+    generateTutorMatchReport: build.mutation<
+      GenerateTutorMatchReportResponse,
+      { requestId: string }
+    >({
       query: ({ requestId }) => ({
         url: `${Endpoints.RequestTutor}/match-tutors/${requestId}`,
         method: "POST",
       }),
       invalidatesTags: ["RequestTutor"],
+    }),
+
+    // FR-5: renders the identical report as a PDF for the admin to download. No email is sent.
+    downloadTutorMatchReportPdf: build.mutation<Blob, { requestId: string }>({
+      query: ({ requestId }) => ({
+        url: `${Endpoints.RequestTutor}/match-tutors/${requestId}/pdf`,
+        method: "GET",
+        responseHandler: (response: Response) => response.blob(),
+      }),
     }),
 
     sendTelegramOutreach: build.mutation<unknown, { requestId: string }>({
@@ -101,6 +117,7 @@ export const {
   useUpdateStatusMutation,
   useUpdateAssignedTutorMutation,
   useGenerateTutorMatchReportMutation,
+  useDownloadTutorMatchReportPdfMutation,
   useSendTelegramOutreachMutation,
   useUnassignTutorMutation,
 } = RequestTutorApi;

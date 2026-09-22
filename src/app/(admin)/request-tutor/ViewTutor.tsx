@@ -14,6 +14,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { useFetchGradeByIdQuery } from "@/store/api/splits/grades";
 import {
+  useDownloadTutorMatchReportPdfMutation,
   useFetchRequestForTutorsByIdQuery,
   useGenerateTutorMatchReportMutation,
   useSendTelegramOutreachMutation,
@@ -23,14 +24,30 @@ import {
   useFetchTutorByIdQuery,
   useFetchTutorsQuery,
 } from "@/store/api/splits/tutors";
-import { CheckCircle2, Eye, Loader2, Mail, Send } from "lucide-react";
+import type { GenerateTutorMatchReportResponse } from "@/types/response-types";
+import {
+  Check,
+  CheckCircle2,
+  Copy,
+  Eye,
+  FileDown,
+  Loader2,
+  Mail,
+  Send,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import {
-  formatTutorMatchReportSummaryText,
-  normalizeTutorMatchReportSummary,
-  type MatchReportSummary,
-} from "./match-report";
+import { formatTutorMatchReportSummaryText } from "./match-report";
+
+type ApiErrorPayload = {
+  data?: { message?: string };
+  payload?: { message?: string };
+};
+
+const getApiErrorMessage = (error: unknown, fallback: string) => {
+  const err = error as ApiErrorPayload;
+  return err?.data?.message || err?.payload?.message || fallback;
+};
 
 interface ViewTutorProps {
   tutorId: string;
@@ -189,12 +206,15 @@ function AssignedTutorBadge({
 
 export function ViewTutorRequests({ tutorId }: ViewTutorProps) {
   const [open, setOpen] = useState(false);
-  const [reportSummary, setReportSummary] = useState<MatchReportSummary | null>(
-    null,
-  );
+  const [reportSummary, setReportSummary] =
+    useState<GenerateTutorMatchReportResponse | null>(null);
   const [telegramOutreachSent, setTelegramOutreachSent] = useState(false);
+  const [showWhatsAppTemplate, setShowWhatsAppTemplate] = useState(false);
+  const [whatsAppCopied, setWhatsAppCopied] = useState(false);
   const [generateTutorMatchReport, { isLoading: isGeneratingReport }] =
     useGenerateTutorMatchReportMutation();
+  const [downloadTutorMatchReportPdf, { isLoading: isDownloadingPdf }] =
+    useDownloadTutorMatchReportPdfMutation();
   const [sendTelegramOutreach, { isLoading: isSendingTelegramOutreach }] =
     useSendTelegramOutreachMutation();
 
@@ -272,6 +292,30 @@ export function ViewTutorRequests({ tutorId }: ViewTutorProps) {
     Boolean(tutor?.telegramOutreachSentAt) || telegramOutreachSent;
   const canSendTelegramOutreach =
     effectiveStatus === "Pending" && !isTelegramOutreachSent && !isLoading;
+
+  // §3.2 / FR-6/FR-7: both report buttons disable with zero matched tutors; Generate also
+  // needs a student email address, Download PDF doesn't.
+  const totalMatchedTutors =
+    tutor?.totalMatchedTutors ??
+    (Array.isArray(tutor?.tutors)
+      ? tutor.tutors.reduce(
+          (sum, block) => sum + (block.matchedTutorCount || 0),
+          0,
+        )
+      : 0);
+  const hasStudentEmail = Boolean(tutor?.email && tutor.email.trim());
+  const hasNoMatchedTutors = !isLoading && totalMatchedTutors === 0;
+  const canDownloadPdf = !isLoading && totalMatchedTutors > 0;
+  const canGenerate = canDownloadPdf && hasStudentEmail;
+  const noMatchesTooltip = "No matched tutors yet. Report unavailable.";
+  const generateTooltip = hasNoMatchedTutors
+    ? noMatchesTooltip
+    : !hasStudentEmail
+      ? "This request has no student email address"
+      : "Email the report to the student and the internal inbox";
+  const downloadPdfTooltip = hasNoMatchedTutors
+    ? noMatchesTooltip
+    : "Download the report as a PDF";
 
   const displayFieldClass =
     "w-full rounded-md border border-gray-200 bg-gray-50 py-2.5 px-3 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-700 dark:text-white/90 min-h-[2rem] overflow-auto scrollbar-thin";
@@ -355,14 +399,89 @@ export function ViewTutorRequests({ tutorId }: ViewTutorProps) {
       const response = await generateTutorMatchReport({
         requestId: tutorId,
       }).unwrap();
-      const summary = normalizeTutorMatchReportSummary(response);
-      setReportSummary(summary);
-      toast.success(
-        `Tutor match report sent successfully${formatTutorMatchReportSummaryText(summary) ? `: ${formatTutorMatchReportSummaryText(summary)}` : ""}`,
-      );
+      setReportSummary(response);
+      setShowWhatsAppTemplate(true);
+
+      const summaryText = formatTutorMatchReportSummaryText(response);
+      if (response.outcome === "success") {
+        toast.success(
+          `Tutor match report sent${summaryText ? `: ${summaryText}` : ""}`,
+        );
+      } else {
+        // Edge case: partial failure — report it, don't claim full success (§8).
+        toast.error(
+          response.message ||
+            `Tutor match report only partly sent${summaryText ? `: ${summaryText}` : ""}`,
+        );
+      }
     } catch (error) {
       console.error(error);
-      toast.error("Failed to generate tutor match report");
+      toast.error(
+        getApiErrorMessage(error, "Failed to generate tutor match report"),
+      );
+    }
+  };
+
+  const handleDownloadTutorMatchReportPdf = async () => {
+    try {
+      const blob = await downloadTutorMatchReportPdf({
+        requestId: tutorId,
+      }).unwrap();
+      const fileName = `TuitionLanka-Match-Report-${requestReference}-${new Date()
+        .toISOString()
+        .slice(0, 10)
+        .replace(/-/g, "")}.pdf`;
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(objectUrl);
+      setShowWhatsAppTemplate(true);
+      toast.success("Tutor match report PDF downloaded");
+    } catch (error) {
+      console.error(error);
+      toast.error(getApiErrorMessage(error, "Failed to download tutor match report PDF"));
+    }
+  };
+
+  const buildWhatsAppMessage = () => {
+    const studentName = getSafeValue(tutor?.name, "there");
+    const subjects = Array.from(
+      new Set(
+        (Array.isArray(tutor?.tutors) ? tutor.tutors : [])
+          .map((t) => getSubjectDisplayValue(t.subject))
+          .filter(Boolean),
+      ),
+    ).join(", ");
+    const gradeLabel = getGradeDisplayValue(tutor?.grade) || "N/A";
+
+    return [
+      `Hi ${studentName},`,
+      "",
+      `Your tutor match report for Request ${requestReference} is ready. We found ${totalMatchedTutors} tutor${totalMatchedTutors === 1 ? "" : "s"} for ${subjects || "N/A"}, ${gradeLabel}.`,
+      "",
+      "The PDF is attached. Each tutor has an ID, experience, availability and fees.",
+      "",
+      "Reply here or to your email with the Tutor ID you want and we will send you their contact details.",
+      "",
+      "Matches are free until 30 September. After that we charge a fixed fee per match.",
+      "",
+      "TuitionLanka",
+    ].join("\n");
+  };
+
+  const handleCopyWhatsAppMessage = async () => {
+    try {
+      await navigator.clipboard.writeText(buildWhatsAppMessage());
+      setWhatsAppCopied(true);
+      toast.success("WhatsApp message copied");
+      setTimeout(() => setWhatsAppCopied(false), 2000);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to copy WhatsApp message");
     }
   };
 
@@ -567,45 +686,99 @@ export function ViewTutorRequests({ tutorId }: ViewTutorProps) {
             </div>
           </div>
           {reportSummary && (
-            <div className="grid mt-4 gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/30">
-              <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
+            <div
+              className={`grid mt-4 gap-3 rounded-lg border p-4 ${
+                reportSummary.outcome === "success"
+                  ? "border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/30"
+                  : "border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30"
+              }`}
+            >
+              <div
+                className={`flex items-center gap-2 ${
+                  reportSummary.outcome === "success"
+                    ? "text-emerald-700 dark:text-emerald-300"
+                    : "text-amber-700 dark:text-amber-300"
+                }`}
+              >
                 <CheckCircle2 className="h-4 w-4" />
-                <p className="text-sm font-semibold">Tutor Match Report sent</p>
+                <p className="text-sm font-semibold">
+                  {reportSummary.outcome === "success"
+                    ? "Tutor Match Report sent"
+                    : "Tutor Match Report only partly sent"}
+                </p>
               </div>
-              {reportSummary.adminEmail && (
-                <p className="text-sm text-emerald-800 dark:text-emerald-200">
-                  Admin email:{" "}
-                  <span className="font-medium">
-                    {reportSummary.adminEmail}
-                  </span>
-                </p>
-              )}
-              {reportSummary.message && (
-                <p className="text-sm text-emerald-800 dark:text-emerald-200">
-                  {reportSummary.message}
-                </p>
-              )}
-              <div className="space-y-2">
-                {reportSummary.blocks.length > 0 ? (
-                  reportSummary.blocks.map((block) => (
-                    <div
-                      key={`${block.label}-${block.matchedCount}`}
-                      className="flex items-center justify-between rounded-md bg-white/80 px-3 py-2 text-sm text-emerald-950 dark:bg-emerald-900/30 dark:text-emerald-100"
+              <p className="text-sm text-gray-700 dark:text-gray-200">
+                Report Ref:{" "}
+                <span className="font-medium">{reportSummary.reportRef}</span>
+              </p>
+              <div className="space-y-1">
+                {reportSummary.recipients.map((recipient) => (
+                  <p
+                    key={recipient.channel}
+                    className="text-sm text-gray-700 dark:text-gray-200"
+                  >
+                    {recipient.channel === "student" ? "Student" : "Internal inbox"}:{" "}
+                    <span className="font-medium">{recipient.address}</span>{" "}
+                    <span
+                      className={
+                        recipient.status === "sent"
+                          ? "text-emerald-600 dark:text-emerald-300"
+                          : "text-red-600 dark:text-red-300"
+                      }
                     >
-                      <span className="font-medium">{block.label}</span>
-                      <span>
-                        {block.matchedCount} matched tutor
-                        {block.matchedCount === 1 ? "" : "s"}
-                      </span>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-emerald-800 dark:text-emerald-200">
-                    The report was generated, but the response did not include
-                    block-level counts.
+                      ({recipient.status})
+                    </span>
                   </p>
-                )}
+                ))}
               </div>
+              <div className="space-y-2">
+                {reportSummary.matchedBlocks.map((block) => (
+                  <div
+                    key={block.subject}
+                    className="flex items-center justify-between rounded-md bg-white/80 px-3 py-2 text-sm text-gray-900 dark:bg-white/10 dark:text-gray-100"
+                  >
+                    <span className="font-medium">{block.subject}</span>
+                    <span>
+                      {block.matchedTutors} matched tutor
+                      {block.matchedTutors === 1 ? "" : "s"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {showWhatsAppTemplate && (
+            <div className="grid mt-4 gap-2 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-700/50">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-gray-900 dark:text-white/90">
+                  WhatsApp message
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCopyWhatsAppMessage}
+                  className="gap-1.5"
+                >
+                  {whatsAppCopied ? (
+                    <Check className="h-3.5 w-3.5" />
+                  ) : (
+                    <Copy className="h-3.5 w-3.5" />
+                  )}
+                  {whatsAppCopied ? "Copied" : "Copy"}
+                </Button>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-white/60">
+                Optional manual step for when a student misses the email —
+                download the PDF above, then paste this alongside it.
+              </p>
+              <textarea
+                readOnly
+                value={buildWhatsAppMessage()}
+                rows={7}
+                className={`${displayFieldClass} resize-none font-mono text-xs`}
+              />
             </div>
           )}
         </div>
@@ -639,8 +812,25 @@ export function ViewTutorRequests({ tutorId }: ViewTutorProps) {
           <Button
             type="button"
             variant="outline"
+            onClick={handleDownloadTutorMatchReportPdf}
+            disabled={!canDownloadPdf || isDownloadingPdf}
+            title={downloadPdfTooltip}
+            className="gap-2"
+          >
+            {isDownloadingPdf ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <FileDown className="h-4 w-4" />
+            )}
+            {isDownloadingPdf ? "Downloading..." : "Download PDF"}
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
             onClick={handleGenerateTutorMatchReport}
-            disabled={isGeneratingReport || isLoading}
+            disabled={!canGenerate || isGeneratingReport}
+            title={generateTooltip}
             className="gap-2"
           >
             {isGeneratingReport ? (
