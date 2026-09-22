@@ -14,7 +14,6 @@ import {
 import { Label } from "@/components/ui/label";
 import { useFetchGradeByIdQuery } from "@/store/api/splits/grades";
 import {
-  useDownloadTutorMatchReportPdfMutation,
   useFetchRequestForTutorsByIdQuery,
   useGenerateTutorMatchReportMutation,
   useSendTelegramOutreachMutation,
@@ -30,7 +29,6 @@ import {
   CheckCircle2,
   Copy,
   Eye,
-  FileDown,
   Loader2,
   Mail,
   Send,
@@ -213,8 +211,6 @@ export function ViewTutorRequests({ tutorId }: ViewTutorProps) {
   const [whatsAppCopied, setWhatsAppCopied] = useState(false);
   const [generateTutorMatchReport, { isLoading: isGeneratingReport }] =
     useGenerateTutorMatchReportMutation();
-  const [downloadTutorMatchReportPdf, { isLoading: isDownloadingPdf }] =
-    useDownloadTutorMatchReportPdfMutation();
   const [sendTelegramOutreach, { isLoading: isSendingTelegramOutreach }] =
     useSendTelegramOutreachMutation();
 
@@ -293,8 +289,7 @@ export function ViewTutorRequests({ tutorId }: ViewTutorProps) {
   const canSendTelegramOutreach =
     effectiveStatus === "Pending" && !isTelegramOutreachSent && !isLoading;
 
-  // §3.2 / FR-6/FR-7: both report buttons disable with zero matched tutors; Generate also
-  // needs a student email address, Download PDF doesn't.
+  // §3.2 / FR-6/FR-7: Generate disables with zero matched tutors or no student email address.
   const totalMatchedTutors =
     tutor?.totalMatchedTutors ??
     (Array.isArray(tutor?.tutors)
@@ -305,17 +300,13 @@ export function ViewTutorRequests({ tutorId }: ViewTutorProps) {
       : 0);
   const hasStudentEmail = Boolean(tutor?.email && tutor.email.trim());
   const hasNoMatchedTutors = !isLoading && totalMatchedTutors === 0;
-  const canDownloadPdf = !isLoading && totalMatchedTutors > 0;
-  const canGenerate = canDownloadPdf && hasStudentEmail;
+  const canGenerate = !isLoading && totalMatchedTutors > 0 && hasStudentEmail;
   const noMatchesTooltip = "No matched tutors yet. Report unavailable.";
   const generateTooltip = hasNoMatchedTutors
     ? noMatchesTooltip
     : !hasStudentEmail
       ? "This request has no student email address"
       : "Email the report to the student and the internal inbox";
-  const downloadPdfTooltip = hasNoMatchedTutors
-    ? noMatchesTooltip
-    : "Download the report as a PDF";
 
   const displayFieldClass =
     "w-full rounded-md border border-gray-200 bg-gray-50 py-2.5 px-3 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-700 dark:text-white/90 min-h-[2rem] overflow-auto scrollbar-thin";
@@ -422,31 +413,6 @@ export function ViewTutorRequests({ tutorId }: ViewTutorProps) {
     }
   };
 
-  const handleDownloadTutorMatchReportPdf = async () => {
-    try {
-      const blob = await downloadTutorMatchReportPdf({
-        requestId: tutorId,
-      }).unwrap();
-      const fileName = `TuitionLanka-Match-Report-${requestReference}-${new Date()
-        .toISOString()
-        .slice(0, 10)
-        .replace(/-/g, "")}.pdf`;
-      const objectUrl = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = objectUrl;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(objectUrl);
-      setShowWhatsAppTemplate(true);
-      toast.success("Tutor match report PDF downloaded");
-    } catch (error) {
-      console.error(error);
-      toast.error(getApiErrorMessage(error, "Failed to download tutor match report PDF"));
-    }
-  };
-
   const buildWhatsAppMessage = () => {
     const studentName = getSafeValue(tutor?.name, "there");
     const subjects = Array.from(
@@ -463,7 +429,7 @@ export function ViewTutorRequests({ tutorId }: ViewTutorProps) {
       "",
       `Your tutor match report for Request ${requestReference} is ready. We found ${totalMatchedTutors} tutor${totalMatchedTutors === 1 ? "" : "s"} for ${subjects || "N/A"}, ${gradeLabel}.`,
       "",
-      "The PDF is attached. Each tutor has an ID, experience, availability and fees.",
+      "Check your email for the full report. Each tutor has an ID, experience, availability and fees.",
       "",
       "Reply here or to your email with the Tutor ID you want and we will send you their contact details.",
       "",
@@ -771,7 +737,7 @@ export function ViewTutorRequests({ tutorId }: ViewTutorProps) {
               </div>
               <p className="text-xs text-gray-500 dark:text-white/60">
                 Optional manual step for when a student misses the email —
-                download the PDF above, then paste this alongside it.
+                send this over WhatsApp instead.
               </p>
               <textarea
                 readOnly
@@ -807,22 +773,6 @@ export function ViewTutorRequests({ tutorId }: ViewTutorProps) {
               : isTelegramOutreachSent
                 ? "Sent to Telegram"
                 : "Send to Telegram"}
-          </Button>
-
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleDownloadTutorMatchReportPdf}
-            disabled={!canDownloadPdf || isDownloadingPdf}
-            title={downloadPdfTooltip}
-            className="gap-2"
-          >
-            {isDownloadingPdf ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <FileDown className="h-4 w-4" />
-            )}
-            {isDownloadingPdf ? "Downloading..." : "Download PDF"}
           </Button>
 
           <Button

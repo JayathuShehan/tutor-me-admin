@@ -76,27 +76,6 @@ export const RequestTutorApi = baseApi.injectEndpoints({
       invalidatesTags: ["RequestTutor"],
     }),
 
-    // FR-5: renders the identical report as a PDF for the admin to download. No email is sent.
-    downloadTutorMatchReportPdf: build.mutation<Blob, { requestId: string }>({
-      query: ({ requestId }) => ({
-        url: `${Endpoints.RequestTutor}/match-tutors/${requestId}/pdf`,
-        method: "GET",
-        // A non-ok response is still JSON ({ code, message } from the API's error handler) —
-        // only parse as a Blob on success, otherwise the real error message gets swallowed as
-        // an opaque Blob and getApiErrorMessage() has nothing to read.
-        responseHandler: async (response: Response) => {
-          if (!response.ok) {
-            try {
-              return await response.json();
-            } catch {
-              return { message: await response.text().catch(() => undefined) };
-            }
-          }
-          return response.blob();
-        },
-      }),
-    }),
-
     sendTelegramOutreach: build.mutation<unknown, { requestId: string }>({
       query: ({ requestId }) => ({
         url: `${Endpoints.RequestTutor}/${requestId}/send-telegram-outreach`,
@@ -129,7 +108,6 @@ export const {
   useUpdateStatusMutation,
   useUpdateAssignedTutorMutation,
   useGenerateTutorMatchReportMutation,
-  useDownloadTutorMatchReportPdfMutation,
   useSendTelegramOutreachMutation,
   useUnassignTutorMutation,
 } = RequestTutorApi;
