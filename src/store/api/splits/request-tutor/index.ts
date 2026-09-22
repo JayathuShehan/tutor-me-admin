@@ -81,7 +81,19 @@ export const RequestTutorApi = baseApi.injectEndpoints({
       query: ({ requestId }) => ({
         url: `${Endpoints.RequestTutor}/match-tutors/${requestId}/pdf`,
         method: "GET",
-        responseHandler: (response: Response) => response.blob(),
+        // A non-ok response is still JSON ({ code, message } from the API's error handler) —
+        // only parse as a Blob on success, otherwise the real error message gets swallowed as
+        // an opaque Blob and getApiErrorMessage() has nothing to read.
+        responseHandler: async (response: Response) => {
+          if (!response.ok) {
+            try {
+              return await response.json();
+            } catch {
+              return { message: await response.text().catch(() => undefined) };
+            }
+          }
+          return response.blob();
+        },
       }),
     }),
 
