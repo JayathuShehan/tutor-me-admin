@@ -395,6 +395,9 @@ export type RequestTutorTutor = {
   duration: string;
   frequency: string;
   assignedTutor: string | null;
+  // §3.2 / FR-6: matched-tutor count for this block, used to drive the Generate/Download PDF
+  // disabled states. Only present on the single-request detail fetch, not the paginated list.
+  matchedTutorCount?: number;
 };
 
 export type RequestTutors = BaseEntity & {
@@ -416,6 +419,25 @@ export type RequestTutors = BaseEntity & {
     | string
     | { id?: string; name?: string; email?: string }
     | null;
+  // Sum of tutors[].matchedTutorCount — only present on the single-request detail fetch.
+  totalMatchedTutors?: number;
+};
+
+// Tutor Match Report — Generate (email) response
+export type TutorMatchReportRecipientResult = {
+  channel: "student" | "internal";
+  address: string;
+  status: "sent" | "failed";
+  error?: string;
+};
+
+export type GenerateTutorMatchReportResponse = {
+  message: string;
+  outcome: "success" | "partial" | "failed";
+  reportRef: string;
+  requestTutorId: string;
+  recipients: TutorMatchReportRecipientResult[];
+  matchedBlocks: Array<{ subject: string; matchedTutors: number }>;
 };
 
 export type FindMyTutorResponse = {
